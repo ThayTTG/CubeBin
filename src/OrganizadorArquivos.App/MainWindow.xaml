@@ -1,0 +1,241 @@
+<Window x:Class="OrganizadorArquivos.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CubeBin" Height="620" Width="820"
+        WindowStartupLocation="CenterScreen">
+    <!-- UI mínima e funcional (seção 8 da spec): sem tema visual elaborado por enquanto. -->
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" x:Name="PainelStatus" Visibility="Collapsed"
+                Background="{StaticResource WarningBackgroundBrush}" BorderBrush="{StaticResource WarningBorderBrush}" BorderThickness="0,1,0,0" Padding="12,8">
+            <StackPanel Orientation="Horizontal">
+                <ProgressBar IsIndeterminate="True" Width="140" Height="14" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{StaticResource AccentBrush}" />
+                <TextBlock x:Name="TxtStatusOrganizando" Text="Organizando arquivos..." VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{StaticResource WarningTextBrush}" />
+            </StackPanel>
+        </Border>
+
+        <TabControl x:Name="AbaPrincipal" Margin="8" SelectionChanged="AbaPrincipal_SelectionChanged">
+
+        <!-- ===================== PASTAS MONITORADAS ===================== -->
+        <TabItem Header="Pastas monitoradas">
+            <DockPanel Margin="8">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button x:Name="BtnAdicionarPasta" Content="Adicionar pasta personalizada" Style="{StaticResource PrimaryButtonStyle}" Padding="8,4" Margin="0,0,8,0" Click="BtnAdicionarPasta_Click" />
+                    <Button x:Name="BtnRemoverPasta" Content="Remover pasta selecionada" Padding="8,4" Margin="0,0,8,0" Click="BtnRemoverPasta_Click" />
+                    <Button x:Name="BtnLimparPastaPadrao" Content="Limpar pasta padrão" Padding="8,4" Margin="0,0,8,0" Click="BtnLimparPastaPadrao_Click" />
+                    <Button x:Name="BtnRestaurarPastaPadrao" Content="Restaurar pasta padrão" Padding="8,4" Click="BtnRestaurarPastaPadrao_Click" />
+                </StackPanel>
+                <Button DockPanel.Dock="Bottom" x:Name="BtnSalvarPastas" Content="Salvar alterações" Style="{StaticResource PrimaryButtonStyle}" Padding="8,4" HorizontalAlignment="Right" Margin="0,8,0,0" Click="BtnSalvarPastas_Click" />
+                <DataGrid x:Name="GridPastas" AutoGenerateColumns="False" IsReadOnly="False" CanUserAddRows="False">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Nome" Binding="{Binding Nome}" Width="150" IsReadOnly="True" />
+                        <DataGridTextColumn Header="Caminho" Binding="{Binding Caminho}" Width="300" IsReadOnly="True" />
+                        <DataGridCheckBoxColumn Header="Organizar subpastas" Binding="{Binding OrganizarSubpastas}" Width="140" />
+                        <DataGridTextColumn Header="Tipo" Binding="{Binding TipoExibicao}" Width="110" IsReadOnly="True" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </TabItem>
+
+        <!-- ===================== REGRAS DE EXTENSÃO ===================== -->
+        <TabItem Header="Regras de extensão">
+            <DockPanel Margin="8">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Text="Editando regras de:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <ComboBox x:Name="ComboContextoRegras" Width="180" Margin="0,0,16,0" SelectionChanged="ComboContextoRegras_SelectionChanged" />
+                    <Button x:Name="BtnAdicionarRegra" Content="Nova regra" Style="{StaticResource PrimaryButtonStyle}" Padding="8,4" Margin="0,0,8,0" Click="BtnAdicionarRegra_Click" />
+                    <Button x:Name="BtnRemoverRegra" Content="Remover regra selecionada" Padding="8,4" Margin="0,0,8,0" Click="BtnRemoverRegra_Click" />
+                    <Button x:Name="BtnUsarPadrao" Content="Usar regras padrão nesta pasta" Padding="8,4" Click="BtnUsarPadrao_Click" />
+                </StackPanel>
+                <Button DockPanel.Dock="Bottom" x:Name="BtnSalvarRegras" Content="Salvar alterações" Style="{StaticResource PrimaryButtonStyle}" Padding="8,4" HorizontalAlignment="Right" Margin="0,8,0,0" Click="BtnSalvarRegras_Click" />
+                <DataGrid x:Name="GridRegras" AutoGenerateColumns="False" IsReadOnly="False" CanUserAddRows="False"
+                          PreviewMouseRightButtonDown="GridRegras_PreviewMouseRightButtonDown"
+                          ToolTip="1 clique seleciona · 2 cliques edita o texto · botão direito mostra mais opções">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Chave" Binding="{Binding Chave}" Width="120" />
+                        <DataGridTextColumn Header="Extensões (separadas por vírgula)" Binding="{Binding ExtensoesTexto}" Width="220" />
+                        <DataGridComboBoxColumn x:Name="ColunaTipoDestino" Header="Tipo" SelectedItemBinding="{Binding TipoTexto}" Width="100" />
+                        <DataGridTextColumn Header="Pasta de destino (Local)" Binding="{Binding Destino}" Width="140" />
+                        <DataGridTextColumn Header="Caminho no Drive (Google Drive)" Binding="{Binding CaminhoDrive}" Width="200" />
+                        <DataGridTextColumn Header="Subpastas configuradas" Binding="{Binding SubpastasResumo}" Width="160" IsReadOnly="True" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </TabItem>
+
+        <!-- ===================== CONFIGURAÇÕES GERAIS ===================== -->
+        <TabItem Header="Configurações gerais">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="32" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Coluna esquerda: agendamento -->
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Agendamento" FontWeight="Bold" Margin="0,0,0,8" />
+
+                            <TextBlock Text="Quantas vezes por dia organizar" Margin="0,8,0,2" />
+                            <TextBox x:Name="TxtExecucoesPorDia" />
+                            <TextBlock Text="As execuções são espaçadas em 24h ÷ esse número, a partir do horário de início abaixo." FontStyle="Italic" Opacity="0.7" TextWrapping="Wrap" Margin="0,2,0,0" />
+
+                            <TextBlock Text="Horário de início (HH:mm)" Margin="0,12,0,2" />
+                            <TextBox x:Name="TxtHorarioInicio" />
+
+                            <TextBlock Text="Tempo de ausência para iniciar (minutos)" Margin="0,12,0,2" />
+                            <TextBox x:Name="TxtTempoAusencia" />
+
+                            <TextBlock Text="Janela de cancelamento (segundos)" Margin="0,12,0,2" />
+                            <TextBox x:Name="TxtJanelaCancelamento" />
+                        </StackPanel>
+
+                        <!-- Coluna direita: diretórios, backup e inicialização -->
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Diretórios e inicialização" FontWeight="Bold" Margin="0,0,0,8" />
+
+                            <TextBlock Text="Diretório temporário" Margin="0,8,0,2" />
+                            <TextBox x:Name="TxtDiretorioTemporario" />
+
+                            <TextBlock Text="Diretório de backups (CSV)" Margin="0,12,0,2" />
+                            <TextBox x:Name="TxtDiretorioBackup" />
+
+                            <TextBlock Text="Quantidade de backups a manter" Margin="0,12,0,2" />
+                            <TextBox x:Name="TxtManterUltimosN" />
+
+                            <CheckBox x:Name="ChkIniciarComWindows" Content="Iniciar automaticamente com o Windows" Margin="0,16,0,0" />
+
+                            <Separator Margin="0,20,0,12" />
+                            <TextBlock Text="Google Drive" FontWeight="Bold" Margin="0,0,0,8" />
+                            <TextBlock Text="Conecte sua conta do Google para poder organizar regras direto para o Drive." TextWrapping="Wrap" Opacity="0.8" Margin="0,0,0,10" />
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="BtnConectarGoogleDrive" Content="Conectar ao Google Drive" Style="{StaticResource PrimaryButtonStyle}" Padding="8,4" Margin="0,0,10,0" Click="BtnConectarGoogleDrive_Click" />
+                                <TextBlock x:Name="TxtStatusGoogleDrive" VerticalAlignment="Center" Text="Não conectado" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+
+                    <Button x:Name="BtnSalvarConfigGerais" Content="Salvar configurações" Style="{StaticResource PrimaryButtonStyle}" Padding="8,4" Margin="0,24,0,0" HorizontalAlignment="Left" Click="BtnSalvarConfigGerais_Click" />
+
+                    <Separator Margin="0,20,0,12" />
+                    <TextBlock Text="Executar a organização agora, sem esperar o próximo horário agendado:" TextWrapping="Wrap" Margin="0,0,0,8" />
+                    <Button x:Name="BtnExecutarAgora" Content="Executar organização agora" Style="{StaticResource PrimaryButtonStyle}" Padding="8,4" HorizontalAlignment="Left" Click="BtnExecutarAgora_Click" />
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- ===================== PENDÊNCIAS ===================== -->
+        <TabItem Header="Pendências">
+            <DockPanel Margin="8">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button x:Name="BtnRecarregarPendencias" Content="Recarregar" Padding="8,4" Margin="0,0,8,0" Click="BtnRecarregarPendencias_Click" />
+                    <Button x:Name="BtnIgnorarPendencia" Content="Ignorar selecionada" Padding="8,4" Click="BtnIgnorarPendencia_Click" />
+                </StackPanel>
+                <DataGrid x:Name="GridPendencias" AutoGenerateColumns="False" IsReadOnly="True"
+                          MouseDoubleClick="GridPendencias_MouseDoubleClick"
+                          ToolTip="Duplo clique para escolher em qual pasta/regra existente organizar este arquivo">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Arquivo" Binding="{Binding NomeArquivo}" Width="200" />
+                        <DataGridTextColumn Header="Extensão" Binding="{Binding Extensao}" Width="90" />
+                        <DataGridTextColumn Header="Pasta de origem" Binding="{Binding PastaOrigemId}" Width="130" />
+                        <DataGridTextColumn Header="Detectado em" Binding="{Binding DataDeteccao}" Width="150" />
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </TabItem>
+
+        <!-- ===================== HISTÓRICO ===================== -->
+        <TabItem Header="Histórico">
+            <DockPanel Margin="8">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button x:Name="BtnRecarregarHistorico" Content="Recarregar" Padding="8,4" Click="BtnRecarregarHistorico_Click" />
+                </StackPanel>
+                <DataGrid x:Name="GridHistorico" AutoGenerateColumns="False" IsReadOnly="True"
+                          MouseDoubleClick="GridHistorico_MouseDoubleClick"
+                          ToolTip="Duplo clique para abrir o arquivo de backup">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Arquivo de backup" Binding="{Binding Nome}" Width="260" />
+                        <DataGridTextColumn Header="Criado em" Binding="{Binding CriadoEm}" Width="160" />
+                        <DataGridTextColumn Header="Tamanho (KB)" Binding="{Binding TamanhoKb}" Width="120" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </TabItem>
+
+        <!-- ===================== RECALL ===================== -->
+        <TabItem x:Name="TabRecall" Header="Recall">
+            <DockPanel Margin="8">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button x:Name="BtnRecarregarRecall" Content="Recarregar" Padding="8,4" Margin="0,0,16,0" Click="BtnRecarregarRecall_Click" />
+
+                    <Border Background="{StaticResource RecallAtivoBrush}" Width="14" Height="14" Margin="0,0,4,0" />
+                    <TextBlock Text="Organizado" VerticalAlignment="Center" Margin="0,0,16,0" />
+                    <Border Background="{StaticResource RecallPendenteBrush}" Width="14" Height="14" Margin="0,0,4,0" />
+                    <TextBlock Text="Será devolvido ao salvar" VerticalAlignment="Center" Margin="0,0,16,0" />
+                    <Border Background="{StaticResource RecallRestauradoBrush}" Width="14" Height="14" Margin="0,0,4,0" />
+                    <TextBlock Text="Devolvido ao local de origem" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                    <Button x:Name="BtnCancelarRecall" Content="Cancelar" Padding="10,4" Margin="0,0,8,0" IsEnabled="False" Click="BtnCancelarRecall_Click" />
+                    <Button x:Name="BtnDesfazerRecall" Content="Desfazer" Padding="10,4" Margin="0,0,8,0" IsEnabled="False" Click="BtnDesfazerRecall_Click" />
+                    <Button x:Name="BtnSalvarRecall" Content="Salvar" Style="{StaticResource PrimaryButtonStyle}" Padding="10,4" IsEnabled="False" Click="BtnSalvarRecall_Click" />
+                </StackPanel>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="220" />
+                        <ColumnDefinition Width="6" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <TreeView x:Name="TreeRecall" Grid.Column="0" SelectedItemChanged="TreeRecall_SelectedItemChanged" />
+
+                    <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" />
+
+                    <DataGrid x:Name="GridRecall" Grid.Column="2" AutoGenerateColumns="False" IsReadOnly="True"
+                              SelectionMode="Extended" SelectionUnit="FullRow"
+                              PreviewMouseRightButtonDown="GridRecall_PreviewMouseRightButtonDown"
+                              ToolTip="Ctrl/Shift + clique para selecionar vários — botão direito marca ou desmarca a devolução">
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CorLinha}" Value="Azul">
+                                        <Setter Property="Background" Value="{StaticResource RecallAtivoBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding CorLinha}" Value="Amarelo">
+                                        <Setter Property="Background" Value="{StaticResource RecallPendenteBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding CorLinha}" Value="Verde">
+                                        <Setter Property="Background" Value="{StaticResource RecallRestauradoBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Arquivo" Binding="{Binding NomeArquivo}" Width="180" />
+                            <DataGridTextColumn Header="Local original" Binding="{Binding CaminhoOrigem}" Width="220" />
+                            <DataGridTextColumn Header="Local atual" Binding="{Binding CaminhoAtual}" Width="220" />
+                            <DataGridTextColumn Header="Movido em" Binding="{Binding MovidoEm}" Width="140" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </DockPanel>
+        </TabItem>
+
+        <!-- ===================== LOGIN / CONTA ===================== -->
+        <TabItem x:Name="TabLogin" Header="Login">
+            <StackPanel Margin="20">
+                <TextBlock Text="Google Drive" FontWeight="Bold" FontSize="14" Margin="0,0,0,12" />
+                <TextBlock x:Name="TxtLoginStatus" Text="Não conectado" Margin="0,0,0,8" />
+                <TextBlock x:Name="TxtLoginEmail" Text="" Margin="0,0,0,4" Opacity="0.85" />
+                <TextBlock x:Name="TxtLoginArmazenamento" Text="" Margin="0,0,0,16" Opacity="0.85" />
+                <Button x:Name="BtnLoginConectar" Content="Conectar ao Google Drive" Style="{StaticResource PrimaryButtonStyle}" Padding="10,6" HorizontalAlignment="Left" Click="BtnConectarGoogleDrive_Click" />
+            </StackPanel>
+        </TabItem>
+
+    </TabControl>
+    </DockPanel>
+</Window>
