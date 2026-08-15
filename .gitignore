@@ -15,7 +15,10 @@ Thumbs.db
 .DS_Store
 
 ## Credenciais reais do Google Drive — NUNCA commitar (ver GoogleDriveCredentials.Secrets.cs.example)
-src/OrganizadorArquivos.Core/GoogleDriveCredentials.Secrets.cs
+## Padrão amplo para cobrir cópias/duplicatas (ex: "Secrets (2).cs" geradas pelo Windows),
+## excluindo explicitamente o arquivo de exemplo com placeholders.
+src/OrganizadorArquivos.Core/GoogleDriveCredentials.Secrets*.cs
+!src/OrganizadorArquivos.Core/GoogleDriveCredentials.Secrets.cs.example
 
 ## Dados de execução local (config, token OAuth, backups, recall) — nunca ficam no repositório
 *.local.json
