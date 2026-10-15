@@ -1,8 +1,74 @@
 # Especificação Técnica — Organizador de Arquivos para Windows
 
-**Versão atual: 1.25**
+**Versão atual: 2.5**
 
 ## Notas de Atualização
+
+### Nota de Atualização - 2.5 (correção da borda DWM + rodada de polimento)
+Duas partes: fix pontual + auditoria completa do projeto. Ver `RELATORIO_POLIMENTO.md` na raiz para o relatório detalhado tela por tela e arquivo por arquivo.
+
+- **Borda branca residual corrigida**: `TemaJanelaEscura.cs` agora também aplica `DWMWA_BORDER_COLOR` (34), `DWMWA_CAPTION_COLOR` (35) e `DWMWA_TEXT_COLOR` (36), além do `DWMWA_USE_IMMERSIVE_DARK_MODE` já existente — a "borda de destaque" do Windows 11 é controlada separadamente da barra de título, por isso continuava branca mesmo com o modo escuro já funcionando.
+- **Achado sério corrigido**: `PendenciaService`, `RecallService`, `SugestaoService` e `PacoteBackupService` não tratavam JSON corrompido — como os quatro carregam no construtor da `MainWindow`, um arquivo corrompido em qualquer um deles derrubava o app inteiro antes de abrir. Novo `ArquivoJsonUtils.CarregarListaResiliente<T>` usado pelos quatro: renomeia o arquivo problemático (`.corrompido-{timestamp}`) e segue com lista vazia em vez de propagar a exceção.
+- **Duplicação removida**: `GoogleDriveService.EnviarArquivoAsync`/`EnviarArquivoComLinkAsync` tinham ~30 linhas idênticas, consolidadas num método privado compartilhado sem mudar nenhuma assinatura pública.
+- **Consistência visual padronizada**: margem de container raiz unificada em `16` (estava uma mistura de 8/12/16/20 sem critério) e padding de botões unificado em `8,4` (estava uma mistura de 8,4/10,4/10,5/10,6/12,4) em toda a `MainWindow`, `SubpastasWindow` e `DetalhesPacoteWindow`. Estado vazio de Deletar reestruturado para seguir o padrão "título + linha de contexto" já usado em Sugestões/Cubos/Histórico.
+- **Precisão de relatório**: `BackupNuvemService` contava um arquivo já inexistente como "deletado com sucesso"; agora esse caso não conta nem como sucesso nem como falha.
+- **Documentação**: seção "O que já está implementado" do `README.md` estava travada na estrutura de 5 telas anterior à Camada 1 — atualizada para as 8 abas atuais.
+- **Validado como já correto** (sem mudanças): os três fluxos de comportamento pedidos para checagem (backup antes de deletar, confirmação antes de exclusão irreversível, não deletar local antes de confirmar upload) — todos implementados exatamente como especificado.
+- **Itens em aberto documentados no relatório**: cor fixa dos ícones da sidebar, heurística de correlação Histórico↔Recall por horário, e a decisão consciente de não consolidar os dois fluxos de exclusão (Deletar/Sugestões) por segurança dado o volume desta rodada.
+
+### Nota de Atualização - 2.4 (refinamento visual — 5 frentes)
+Rodada grande de polimento, sem mudar a lógica de negócio existente — reestruturação de navegação + visual.
+
+- **Barra de título escura**: novo `TemaJanelaEscura.cs`, P/Invoke em `DwmSetWindowAttribute` com `DWMWA_USE_IMMERSIVE_DARK_MODE` (tenta o valor 20 e cai para 19 em builds mais antigos do Windows 10), aplicado nas 3 janelas do app. Mantém os controles nativos de minimizar/maximizar/fechar — sem chrome customizado.
+- **Estados vazios restantes**: Login ganhou um ícone de nuvem (mesma paleta cinza das outras ilustrações) e um chip visual ("● email@conta.com") substituindo o texto solto "Conectado" quando há sucesso. Deletar ganhou uma zona de arraste **funcional** (não só decorativa) — `AllowDrop`/`Drop`/`DragEnter`/`DragLeave` de verdade, com borda tracejada (`Rectangle` com `StrokeDashArray`, já que `Border` não suporta traço tracejado nativamente) que destaca em vermelho durante o arraste.
+- **Sidebar recolhível com ícones**: cada item do menu lateral ganhou um ícone desenhado à mão (pasta, borracha, lixeira, lâmpada, relógio, engrenagem, nuvem, e o cubo colorido da marca para "Cubos" — os únicos 6 monocromáticos usam `TextPrimaryBrush` fixo por segurança, não uma cor dinamicamente vinculada ao estado do TabItem, para evitar depender de um binding via `RelativeSource`+`ContentPresenter` não testável neste ambiente). Botão de recolher embutido no template do `TabControl`, localizado via `FrameworkTemplate.FindName` após `Loaded` (mecanismo padrão do WPF para alcançar partes nomeadas dentro de um `ControlTemplate` a partir do code-behind). Tooltip com o nome da aba sempre presente (útil tanto recolhido quanto expandido).
+- **Reorganização de navegação**: "Configurações" virou item próprio da sidebar (fora dos módulos) — absorveu tudo que antes era a sub-aba "Configurações gerais" de Organizar (agendamento, diretórios, iniciar com Windows, executar agora). Organizar ficou só com Regras de extensão e Pendências. **Recall foi absorvido pela aba Histórico** — mesma tela agora, com um novo botão "Ver itens desta execução" que filtra o Recall pelos itens cujo `MovidoEm` fica a até 5 minutos do horário do backup CSV selecionado (heurística por proximidade de horário, já que não existe um vínculo gravado diretamente entre os dois — documentado como tal no código). O guard de navegação que bloqueava sair do Recall com marcações não salvas foi simplificado (protege a saída da aba Histórico diretamente, em vez da lógica aninhada de duas camadas que existia quando o Recall vivia dentro de Organizar).
+- **Hover na sidebar**: já existia de uma versão anterior (`MultiTrigger` com `SidebarHoverBrush`) — conferido que sobreviveu à reescrita da estrutura de navegação, nenhuma mudança necessária.
+- **Aliases novos**: `Button` e `ColumnDefinition` adicionados à lista de aliases WPF/WinForms deste arquivo (mesma categoria de risco de sempre — `UseWindowsForms=true` injeta um using implícito para `System.Windows.Forms`, que também tem esses dois nomes).
+
+### Nota de Atualização - 2.3 (estados vazios + ícone do app)
+- **Estados vazios ilustrados** em 3 telas, substituindo texto cinza genérico por ilustração + microtexto (título curto, uma linha de contexto, botão quando fazia sentido):
+  - **Sugestões**: pilha de 3 cubos cinza (SVG fornecido reaproveitado ponto a ponto, convertido em `Polygon`/`Canvas` nativos do WPF — sem precisar de biblioteca de renderização de SVG). "Tudo limpo por aqui" + botão "Analisar agora" (mesmo handler do botão do topo, ambos sincronizados durante a análise).
+  - **Cubos**: um cubo cinza único a 40% de opacidade, "flutuando" — reaproveita a mesma geometria de 3 polígonos do cubo colorido real, só que sem cor. "Nenhum cubo ainda", sem botão (não faz sentido forçar um envio a partir daqui).
+  - **Histórico**: gaveteiro simples com uma gaveta entreaberta (silhueta em `Rectangle`s, tons entre `#3f4147` e `#9a9da3`, sem SVG fornecido — desenhado seguindo a mesma paleta). "Nada guardado ainda".
+  - Implementado sem MVVM/converters, no mesmo estilo code-behind do resto do app: cada `Carregar*()` alterna a `Visibility` entre a grid/lista normal e o painel de estado vazio, dependendo da contagem de itens.
+- **Ícone do app**: gerado `app.ico` (multi-resolução: 16/32/48/64/128/256) a partir do SVG dos "3 cubos coloridos sobre fundo escuro" fornecido — sem ferramenta de conversão SVG→ICO disponível no ambiente de desenvolvimento (nem `rsvg-convert`, nem `inkscape`), desenhado manualmente com Pillow reproduzindo as mesmas coordenadas/cores do SVG em alta resolução (4x) e reduzido com antialiasing. Ativado via `ApplicationIcon` no `.csproj`. O ícone da bandeja do sistema (`TrayIconManager`) passou a extrair esse mesmo ícone do executável em runtime (`Icon.ExtractAssociatedIcon`), com fallback pro ícone padrão do Windows se a extração falhar (ex.: rodando via `dotnet run`, onde o executável real é o `dotnet.exe`).
+
+### Nota de Atualização - 2.2 (Camada 3 — backup em nuvem + Camada 4 — Cubos)
+Implementadas juntas por estarem diretamente conectadas: cada pacote enviado na Camada 3 vira um item visual na Camada 4.
+
+**Camada 3 — fluxo de backup em nuvem:**
+- **"Sem token bruto"**: substituído o `FileDataStore` padrão do Google (grava o token OAuth em texto puro) por `DpapiDataStore`, uma implementação própria de `IDataStore` que criptografa cada valor com DPAPI (`ProtectedData`, ligado à conta do Windows do usuário) antes de gravar em disco. Exigiu o pacote `System.Security.Cryptography.ProtectedData` (não incluído por padrão nem em TFMs `-windows`).
+- **Fluxo "compactar → enviar → só então apagar local"**: novo `BackupNuvemService.EnviarEDeletarAsync` — compacta os arquivos num `.zip` nomeado com data/hora (`CubeBin-Backup-AAAA-MM-DD_HHmmss.zip`), envia ao Drive, e só apaga os arquivos locais depois de confirmar que o upload terminou. Qualquer falha antes dessa confirmação (compactação ou upload) não apaga nada local — mesma filosofia de segurança já usada em `ArquivoUtils`/Recall/Deletar.
+- **Falha no envio**: usuário é avisado com a mensagem de erro específica; "tentar novamente" é simplesmente clicar no mesmo botão de novo (o estado não fica travado).
+- Integrado como um botão adicional ("Enviar à nuvem e excluir" / "Enviar aprovadas à nuvem") tanto no módulo Deletar quanto em Sugestões, ao lado dos botões de exclusão direta já existentes — reaproveitando um fluxo compartilhado (`EnviarArquivosParaNuvemEExcluirAsync`) para não duplicar confirmação/erro/relatório em dois lugares.
+- Relatório final (via `MessageBox` + notificação) resume: pacote enviado, quantos arquivos foram removidos localmente, e eventuais falhas ao remover localmente (o arquivo já está seguro na nuvem nesse caso, só não saiu do disco).
+
+**Camada 4 — visualização dos "Cubos":**
+- Nova aba "Cubos": cada `PacoteBackup` (persistido em `pacotes.json` via `PacoteBackupService`) vira um cubo isométrico desenhado com `Polygon` (3 faces, cores do tema preto/vermelho) — **não há um ícone/logo oficial do CubeBin ainda**, então esta é uma representação genérica nas cores do app, não uma reprodução de um logo definido.
+- Opacidade proporcional ao tamanho do pacote em relação ao maior já enviado (pacotes grandes mais sólidos, pequenos mais translúcidos), calculada em `CuboExibicao`.
+- Hover mostra contagem por categoria (Fotos, Músicas, Vídeos, Documentos, Compactados, Outros — classificadas por `CategoriaArquivo`) via `ToolTip`.
+- Clique abre `DetalhesPacoteWindow`: lista de arquivos do pacote, data do envio, link "Abrir no Google Drive" (via `webViewLink`, obtido por um novo método `GoogleDriveService.EnviarArquivoComLinkAsync` — separado do `EnviarArquivoAsync` original para não alterar o pipeline principal de organização), e "Restaurar" (baixa o `.zip` de volta e descompacta na pasta escolhida).
+- Novos campos de config (`CaminhoDriveBackups`, `ArquivoPacotesBackup`) — o segundo, por ser um caminho computado em runtime, já entra com migração automática desde o commit inicial desta feature (lição do bug do `ArquivoRecall`, 1.14, aplicada de novo).
+
+### Nota de Atualização - 2.1 (Camada 2 — agente de sugestões)
+Novo módulo opcional, **desativado por padrão**: um agente que monitora o disco em segundo plano e sugere arquivos que podem ser limpos, sem apagar nada automaticamente.
+
+- **"IA" é heurística local, sem custo/dependência externa** — exatamente como pedido. Três critérios: (1) arquivos duplicados por hash (SHA-256, agrupados por tamanho primeiro para não hashear tudo à toa), (2) temporários/cache (`.tmp`, `.cache`, `.bak`, `.old`, `.log`) sem "toque" há N dias, (3) arquivos grandes (acima de um tamanho mínimo configurável) parados há N dias.
+- **Nota técnica sobre "não usado há N dias"**: o Windows costuma desabilitar a atualização de `LastAccessTime` por performance desde o Vista — usamos o mais recente entre `LastAccessTime` e `LastWriteTime` como aproximação melhor-esforço, documentado no código.
+- **Escopo do scan**: as mesmas pastas monitoradas já configuradas em Organizar/Limpar — nunca o disco inteiro (por segurança e desempenho; hashear um disco inteiro seria proibitivamente lento).
+- **Fluxo de revisão** (nova aba "Sugestões"): grid com arquivo, tipo, motivo, tamanho estimado e status. Aprovação/ignorar item a item ou em lote (seleção múltipla + botões). Exclusão real só num passo separado ("Excluir aprovadas"), com a mesma confirmação explícita e backup CSV prévio do módulo Deletar — nunca automático.
+- **Agendamento**: `AgenteScheduler` (App) roda na mesma checagem de ausência (`IdleDetectionService`/`TempoAusenciaMinutos`) já usada pelo resto do app, com frequência própria e configurável (`AgenteExecucoesPorDia`/`AgenteHorarioInicio`, mesmo mecanismo de N-vezes-por-dia do `BackgroundScheduler`).
+- **Novos arquivos**: `TipoSugestao`, `SugestaoLimpeza` (Models); `SugestaoService` (persistência em `sugestoes.json`, com migração automática do caminho para configs antigos — lição aplicada desde o início desta vez), `AgenteSugestaoService` (as heurísticas), `FormatarBytes` (utilitário compartilhado); `AgenteScheduler` (App).
+
+### Nota de Atualização - 2.0 (releitura "Camada 1")
+Reorganização estrutural grande, a pedido de uma releitura do projeto com foco em 3 módulos. Toda a lógica de negócio existente foi preservada — isto é reestruturação de navegação + rebranding + um módulo novo, não uma reescrita.
+
+- **Rebranding completo**: `OrganizadorArquivos` → `CubeBin` em todo lugar — pastas (`src/CubeBin.Core`, `src/CubeBin.App`), namespaces, `.sln`, `.csproj`, strings visíveis. Nenhum resíduo do nome antigo em código (conferido via busca global).
+- **Reestruturação em 3 módulos + 2 abas de apoio**: o menu lateral principal agora tem 5 itens: **Organizar** (com sub-abas internas: Regras de extensão, Configurações, Pendências, Recall — usando um novo estilo de sub-aba horizontal, `SubTabControlStyle`/`SubTabItemStyle`, para não herdar o template de menu lateral), **Limpar** (renomeado de "Pastas monitoradas" — mesma funcionalidade: limpar/restaurar pastas padrão, criar/excluir pastas personalizadas), **Deletar** (módulo novo, ver abaixo), **Histórico** e **Login**, ambas promovidas a abas de nível principal.
+- **Novo módulo Deletar**: seleção manual de arquivos (`OpenFileDialog`, multi-seleção) ou pastas (`OpenFolderDialog`) de qualquer lugar do PC, lista de itens marcados, confirmação explícita (`MessageBox` com aviso de irreversibilidade, padrão "Não"), backup em CSV de tudo que será apagado gerado antes da exclusão (reaproveita `BackupService.GerarBackupCsv`), depois `File.Delete`/`Directory.Delete(recursive:true)` item por item com relatório de falhas parciais. **Nunca roda automaticamente** — só manual, por ser irreversível e não passar pelo Recall. Notificação de conclusão via novo `INotificationService.NotificarMensagemSimples`.
+- **Bloqueio de saída do Recall adaptado**: como o Recall agora vive dentro de uma sub-aba do módulo Organizar (não mais um item direto do menu lateral), a proteção contra sair com marcações não salvas passou a ter dois guardas: um na troca de sub-aba dentro de Organizar, outro ao tentar sair do módulo Organizar inteiro enquanto o Recall (aninhado) está selecionado.
+- **Aba Login simplificada**: a seção de conexão com o Google Drive que existia duplicada em Configurações gerais foi removida de lá — agora existe só na aba Login própria, conforme decisão desta releitura.
 
 ### Nota de Atualização - 1.25 (revisão da 1.24)
 - Corrigido bug real: o botão "Conectar" da nova aba Login e o das Configurações gerais compartilhavam o mesmo handler, que mexia direto no botão de Configurações gerais por nome fixo — clicar pela aba Login não desabilitava/mostrava "Conectando..." no botão certo. Agora atualiza os dois.
@@ -12,7 +78,7 @@
 - Limpeza de um comentário de documentação duplicado/deslocado no `GoogleDriveService.cs`, sobra da pressa da versão anterior.
 
 ### Nota de Atualização - 1.24
-- **Rebatizado para "CubeBin"** em todas as strings visíveis (título da janela, notificações, bandeja). Pastas/namespaces do código continuam `OrganizadorArquivos` internamente.
+- **Rebatizado para "CubeBin"** em todas as strings visíveis (título da janela, notificações, bandeja). Pastas/namespaces do código continuam `CubeBin` internamente.
 - **Pastas padrão reduzidas a só Downloads** — Documentos e Área de Trabalho removidas da lista padrão.
 - **Regras padrão vs. por pasta:** `PastaMonitorada` ganhou `RegrasPersonalizadas` (override opcional). Aba Regras ganhou um seletor "Editando regras de: Padrão / <pasta>" e um botão "Usar regras padrão nesta pasta". Pasta sem override usa as regras padrão automaticamente.
 - **Indicador de progresso com detalhe:** `GoogleDriveService` ganhou o evento `ProgressoAlterado` (nome do arquivo + Mbps estimado), disparado durante upload e download; a barra de status já existente passou a mostrar esse detalhe em tempo real em vez do texto genérico "Organizando arquivos...".
@@ -109,15 +175,15 @@
 - Novo método `OrganizadorService.ExecutarManualmenteAsync`, que roda o mesmo pipeline da execução automática (backup → temporário → classificação → destino → notificação), mas pula a checagem de ausência e a janela de cancelamento de 60s — o clique do usuário já é a confirmação.
 
 ### Nota de Atualização - 1.6
-- Corrigido bug real de primeira execução: `ConfigService.Salvar()` gravava o `config.json` sem antes garantir que a pasta `%LOCALAPPDATA%\OrganizadorArquivos` existia. Na primeiríssima vez que o app rodava (pasta ainda não criada), isso lançava uma exceção não tratada durante `OnStartup`, derrubando o processo antes de qualquer janela ou ícone de bandeja aparecer — por isso o app "sumia" sem deixar rastro no Gerenciador de Tarefas.
-- Adicionado tratamento global de exceções em `App.xaml.cs` (`DispatcherUnhandledException` + `AppDomain.UnhandledException`), gravando qualquer falha de inicialização ou de execução em `%LOCALAPPDATA%\OrganizadorArquivos\crash.log`, com uma mensagem visível ao usuário em vez de o processo simplesmente encerrar em silêncio.
+- Corrigido bug real de primeira execução: `ConfigService.Salvar()` gravava o `config.json` sem antes garantir que a pasta `%LOCALAPPDATA%\CubeBin` existia. Na primeiríssima vez que o app rodava (pasta ainda não criada), isso lançava uma exceção não tratada durante `OnStartup`, derrubando o processo antes de qualquer janela ou ícone de bandeja aparecer — por isso o app "sumia" sem deixar rastro no Gerenciador de Tarefas.
+- Adicionado tratamento global de exceções em `App.xaml.cs` (`DispatcherUnhandledException` + `AppDomain.UnhandledException`), gravando qualquer falha de inicialização ou de execução em `%LOCALAPPDATA%\CubeBin\crash.log`, com uma mensagem visível ao usuário em vez de o processo simplesmente encerrar em silêncio.
 
 ### Nota de Atualização - 1.5
-- Corrigido `CS7064` (`app.ico` não encontrado): a tag `<ApplicationIcon>app.ico</ApplicationIcon>` foi removida do `OrganizadorArquivos.App.csproj` porque o arquivo nunca chegou a ser criado. O app volta a usar o ícone padrão do .NET até que um ícone definitivo seja definido — quando isso acontecer, basta colocar o `.ico` na pasta do projeto App e reativar a tag.
+- Corrigido `CS7064` (`app.ico` não encontrado): a tag `<ApplicationIcon>app.ico</ApplicationIcon>` foi removida do `CubeBin.App.csproj` porque o arquivo nunca chegou a ser criado. O app volta a usar o ícone padrão do .NET até que um ícone definitivo seja definido — quando isso acontecer, basta colocar o `.ico` na pasta do projeto App e reativar a tag.
 - O erro `NETSDK1005` que aparece ao rodar `dotnet clean` antes do primeiro `dotnet restore` de uma TFM nova é apenas um efeito de ordem dos comandos, não um bug do projeto — desaparece assim que o `restore` roda em seguida.
 
 ### Nota de Atualização - 1.4
-- Corrigidos os erros restantes `CS1061`/`CS0103` em `ToastNotificationService.cs`. A causa não era mais o nome do pacote (isso já tinha sido corrigido na 1.3), e sim o `TargetFramework` do projeto App: `Microsoft.Toolkit.Uwp.Notifications` só expõe `ToastContentBuilder.Show()` e `ToastNotificationManagerCompat` quando o projeto mira uma versão específica da API do Windows. Trocado `net8.0-windows` por `net8.0-windows10.0.19041.0` (com `TargetPlatformMinVersion` 10.0.17763.0) no `OrganizadorArquivos.App.csproj`.
+- Corrigidos os erros restantes `CS1061`/`CS0103` em `ToastNotificationService.cs`. A causa não era mais o nome do pacote (isso já tinha sido corrigido na 1.3), e sim o `TargetFramework` do projeto App: `Microsoft.Toolkit.Uwp.Notifications` só expõe `ToastContentBuilder.Show()` e `ToastNotificationManagerCompat` quando o projeto mira uma versão específica da API do Windows. Trocado `net8.0-windows` por `net8.0-windows10.0.19041.0` (com `TargetPlatformMinVersion` 10.0.17763.0) no `CubeBin.App.csproj`.
 
 ### Nota de Atualização - 1.3
 - Corrigido pacote NuGet de notificações: `CommunityToolkit.WinUI.Notifications` (voltado para apps WinUI 3 / Windows App SDK) foi trocado por `Microsoft.Toolkit.Uwp.Notifications` (correto para apps WPF/WinForms clássicos), resolvendo os erros `CS1061`/`CS0103` em `ToastNotificationService.cs`.
@@ -155,7 +221,7 @@ Arquivo único, versionado, que guarda todo o estado de configuração.
 ```json
 {
   "versao_config": 1,
-  "diretorio_temporario": "C:\\Users\\<user>\\AppData\\Local\\OrganizadorArquivos\\temp",
+  "diretorio_temporario": "C:\\Users\\<user>\\AppData\\Local\\CubeBin\\temp",
   "execucoes_por_dia": 4,
   "horario_inicio": "08:00",
   "tempo_ausencia_minutos": 10,
@@ -204,14 +270,14 @@ Arquivo único, versionado, que guarda todo o estado de configuração.
     "audio":        { "extensoes": [".mp3", ".wav", ".flac"], "destino": "Áudio", "subpastas": {} }
   },
   "backup": {
-    "diretorio_csv": "C:\\Users\\<user>\\AppData\\Local\\OrganizadorArquivos\\backups",
+    "diretorio_csv": "C:\\Users\\<user>\\AppData\\Local\\CubeBin\\backups",
     "manter_ultimos_n": 30
   },
   "pendencias": {
-    "arquivo_fila": "C:\\Users\\<user>\\AppData\\Local\\OrganizadorArquivos\\pendencias.json"
+    "arquivo_fila": "C:\\Users\\<user>\\AppData\\Local\\CubeBin\\pendencias.json"
   },
   "recall": {
-    "arquivo": "C:\\Users\\<user>\\AppData\\Local\\OrganizadorArquivos\\recall.json"
+    "arquivo": "C:\\Users\\<user>\\AppData\\Local\\CubeBin\\recall.json"
   }
 }
 ```
@@ -359,7 +425,7 @@ Quando dois arquivos de mesmo nome (ex.: `relatorio.pdf`) vêm de pastas de orig
 **Escopo definido:** só Google Drive (não OneDrive). Ao enviar um arquivo pra nuvem, o local é **apagado do disco** (libera espaço de verdade, não é backup). Organização para o Drive segue exatamente a mesma lógica de disparo (automática ou manual) que organização local — sem tratamento especial.
 
 ### 11.1 Modelo
-Uma `RegraExtensao` ganha `TipoDestino` (`Local` ou `GoogleDrive`) e `CaminhoDrive` (ex.: `"OrganizadorArquivos/Compactados"`). Uma regra aponta pra pasta local **ou** Drive, nunca os dois — mas subpastas por extensão funcionam do mesmo jeito nos dois casos.
+Uma `RegraExtensao` ganha `TipoDestino` (`Local` ou `GoogleDrive`) e `CaminhoDrive` (ex.: `"CubeBin/Compactados"`). Uma regra aponta pra pasta local **ou** Drive, nunca os dois — mas subpastas por extensão funcionam do mesmo jeito nos dois casos.
 
 ### 11.2 Autenticação
 - OAuth2, fluxo "aplicativo para computador" (abre o navegador para login).

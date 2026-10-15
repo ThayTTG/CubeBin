@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>CubeBin.App</RootNamespace>
+    <!-- Ícone placeholder gerado a partir do SVG oficial dos "3 cubos" (ver docs/spec.md) — trocar
+         o arquivo app.ico se um ícone definitivo for desenhado futuramente. -->
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Product>CubeBin</Product>
+    <AssemblyTitle>CubeBin</AssemblyTitle>
+    <Company>NokyLabs</Company>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Biblioteca para toasts nativos do Windows 10/11 em apps desktop clássicos (WPF/WinForms) -->
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CubeBin.Core\CubeBin.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>CubeBin.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Integração com Google Drive (upload/download de arquivos, autenticação OAuth). -->
+    <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
+    <PackageReference Include="Google.Apis.Drive.v3" Version="1.68.0.3466" />
+    <!-- DPAPI: criptografa o token OAuth em disco, ligado à conta do Windows do usuário —
+         "sem token bruto" (Camada 3). Sabidamente não incluído por padrão mesmo em TFMs -windows. -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,100 @@
+name: Build e Release
+
+# Lança uma versão nova do CubeBin.
+#
+# Como disparar:
+#   • enviar qualquer commit para o branch "release"  → a tag vem do <Version> do CubeBin.App.csproj
+#   • ou enviar uma tag no formato v1.2.3
+#
+# Google Drive: as credenciais reais NUNCA ficam no repositório. Para o pacote publicado
+# ter o backup na nuvem funcionando, cadastre em Settings › Secrets and variables › Actions:
+#   CUBEBIN_GDRIVE_CLIENT_ID      e      CUBEBIN_GDRIVE_CLIENT_SECRET
+# Sem eles, o app é compilado normalmente, só com o backup na nuvem desativado.
+on:
+  push:
+    branches:
+      - release
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Descobrir a versão
+        id: versao
+        shell: pwsh
+        run: |
+          [xml]$proj = Get-Content src/CubeBin.App/CubeBin.App.csproj
+          $v = @($proj.Project.PropertyGroup | ForEach-Object { $_.Version } | Where-Object { $_ })[0]
+          if ("${{ github.ref_type }}" -eq "tag") { $tag = "${{ github.ref_name }}" } else { $tag = "v$v" }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Preparar credenciais do Google Drive
+        shell: pwsh
+        env:
+          CLIENT_ID: ${{ secrets.CUBEBIN_GDRIVE_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CUBEBIN_GDRIVE_CLIENT_SECRET }}
+        run: |
+          $destino = "src/CubeBin.Core/GoogleDriveCredentials.Secrets.cs"
+          if ($env:CLIENT_ID -and $env:CLIENT_SECRET) {
+            $conteudo = @"
+          namespace CubeBin.Core;
+          public static partial class GoogleDriveCredentials
+          {
+              public const string ClientId = "$($env:CLIENT_ID)";
+              public const string ClientSecret = "$($env:CLIENT_SECRET)";
+          }
+          "@
+            Set-Content -Path $destino -Value $conteudo -Encoding utf8
+            Write-Host "Credenciais do Google Drive configuradas."
+          } else {
+            Copy-Item "src/CubeBin.Core/GoogleDriveCredentials.Secrets.cs.example" $destino
+            Write-Host "::warning::Sem credenciais do Google Drive: o backup na nuvem ficará desativado neste pacote."
+          }
+
+      - name: Publicar (win-x64, arquivo único)
+        run: >
+          dotnet publish src/CubeBin.App/CubeBin.App.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none
+          -o publish
+
+      - name: Compactar
+        shell: pwsh
+        run: |
+          if (-not (Test-Path publish\CubeBin.App.exe)) { throw "Faltou o CubeBin.App.exe." }
+          Compress-Archive -Path publish\* -DestinationPath CubeBin-win-x64.zip
+          (Get-FileHash CubeBin-win-x64.zip -Algorithm SHA256).Hash | Out-File -Encoding ascii CubeBin-win-x64.zip.sha256
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.versao.outputs.tag }}
+          name: CubeBin ${{ steps.versao.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          files: |
+            CubeBin-win-x64.zip
+            CubeBin-win-x64.zip.sha256
+          body: |
+            ## CubeBin ${{ steps.versao.outputs.tag }}
+
+            Organiza suas pastas por tipo de arquivo, guarda um backup de tudo e libera espaço com segurança.
+
+            **Como instalar**
+            1. Baixe o `CubeBin-win-x64.zip` abaixo (ou instale pelo NokyLabs Launcher)
+            2. Extraia e abra o `CubeBin.App.exe`
+            3. Se aparecer o aviso azul do Windows, clique em "Mais informações" › "Executar assim mesmo"
+
+            **Requisitos:** Windows 10 ou 11 (64 bits). Não precisa instalar o .NET.
+
+            Mais detalhes: https://thayttg.github.io/nokylabs/#cubebin
