@@ -777,10 +777,9 @@
                                     <ToggleButton.Template>
                                         <ControlTemplate TargetType="ToggleButton">
                                             <Border Background="Transparent">
-                                                <Viewbox Width="14" Height="14" RenderTransformOrigin="0.5,0.5">
-                                                    <Viewbox.RenderTransform>
-                                                        <RotateTransform x:Name="Giro" Angle="0" />
-                                                    </Viewbox.RenderTransform>
+                                                <!-- A seta gira trocando o RenderTransform inteiro: um Setter não
+                                                     alcança uma transformação pelo nome (ela não é um elemento). -->
+                                                <Viewbox x:Name="CaixaSeta" Width="14" Height="14" RenderTransformOrigin="0.5,0.5">
                                                     <Path Width="24" Height="24" Data="{StaticResource IconeChevronDireita}"
                                                           Stroke="{StaticResource TextoApagadoBrush}" StrokeThickness="2.5"
                                                           StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
@@ -788,7 +787,11 @@
                                             </Border>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsChecked" Value="True">
-                                                    <Setter TargetName="Giro" Property="Angle" Value="90" />
+                                                    <Setter TargetName="CaixaSeta" Property="RenderTransform">
+                                                        <Setter.Value>
+                                                            <RotateTransform Angle="90" />
+                                                        </Setter.Value>
+                                                    </Setter>
                                                 </Trigger>
                                             </ControlTemplate.Triggers>
                                         </ControlTemplate>
