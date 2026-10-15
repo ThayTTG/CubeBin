@@ -4,7 +4,8 @@ using System.IO.Compression;
 using System.Windows;
 using CubeBin.Core.Models;
 using CubeBin.Core.Services;
-using MessageBox = System.Windows.MessageBox;
+// MessageBox aponta para o diálogo no tema da NokyLabs (mesma forma de chamar da MessageBox nativa).
+using MessageBox = CubeBin.App.DialogoCubeBin;
 using OpenFolderDialog = Microsoft.Win32.OpenFolderDialog;
 
 namespace CubeBin.App;

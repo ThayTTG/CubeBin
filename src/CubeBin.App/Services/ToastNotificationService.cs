@@ -106,7 +106,7 @@ public class ToastNotificationService : INotificationService
     /// <summary>
     /// Relatório do que deixou de ser organizado e por quê (item 1 do feedback de uso), mostrado
     /// ao clicar na notificação final. O clique chega numa thread própria do sistema de toast,
-    /// então despacha para a thread de UI antes de abrir a MessageBox.
+    /// então despacha para a thread de UI antes de abrir o diálogo.
     /// </summary>
     private static void MostrarRelatorioResultado(ResultadoExecucao resultado)
     {
@@ -118,7 +118,7 @@ public class ToastNotificationService : INotificationService
                     ? $"\n\n{resultado.ArquivosPendentes} arquivo(s) ficaram pendentes (extensão sem regra cadastrada) — veja a aba \"Pendências\"."
                     : "";
 
-                System.Windows.MessageBox.Show(
+                DialogoCubeBin.Show(
                     $"{resultado.ArquivosMovidos} arquivo(s) organizado(s) com sucesso.{extras}",
                     "Resultado da organização",
                     System.Windows.MessageBoxButton.OK,
@@ -131,7 +131,7 @@ public class ToastNotificationService : INotificationService
                 ? $"\n\n(Além disso, {resultado.AvisosRecall.Count} arquivo(s) organizado(s) com sucesso não puderam ser registrados no Recall — a organização em si não foi afetada.)"
                 : "";
 
-            System.Windows.MessageBox.Show(
+            DialogoCubeBin.Show(
                 $"{resultado.ArquivosMovidos} arquivo(s) organizado(s) com sucesso.\n" +
                 $"{resultado.ArquivosComFalha} arquivo(s) NÃO puderam ser organizados:\n\n{detalhes}{avisoRecall}",
                 "Alguns arquivos não puderam ser organizados",
@@ -154,12 +154,14 @@ public class ToastNotificationService : INotificationService
             $"Ativar a organização de subpastas em \"{nomePasta}\" pode mover arquivos que estão " +
             "dentro de estruturas de pastas já organizadas manualmente, alterando essa organização. Continuar?";
 
-        var resultado = System.Windows.MessageBox.Show(
+        var resultado = DialogoCubeBin.Show(
             mensagem,
             "Aviso de risco",
             System.Windows.MessageBoxButton.YesNo,
             System.Windows.MessageBoxImage.Warning,
-            System.Windows.MessageBoxResult.No);
+            System.Windows.MessageBoxResult.No,
+            textoConfirmar: "Ativar mesmo assim",
+            textoCancelar: "Cancelar");
 
         return resultado == System.Windows.MessageBoxResult.Yes;
     }

@@ -1,0 +1,38 @@
+<Window x:Class="CubeBin.App.JanelaDialogo"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CubeBin" Width="460" SizeToContent="Height" MaxHeight="640"
+        Style="{StaticResource JanelaStyle}"
+        ResizeMode="NoResize" ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+    <!--
+        Diálogo de mensagem/confirmação no tema do CubeBin, no lugar da MessageBox branca do
+        Windows. Chamado sempre por DialogoCubeBin.Show(...), que tem a mesma forma de chamar da
+        MessageBox; o texto, os botões, o ícone e o botão padrão são definidos no código.
+    -->
+    <Grid Margin="24,24,24,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0">
+            <Border x:Name="FundoIcone" DockPanel.Dock="Left" Width="44" Height="44" CornerRadius="22"
+                    Background="{StaticResource AccentSoftBrush}" VerticalAlignment="Top" Margin="0,0,16,0">
+                <Viewbox Width="22" Height="22">
+                    <Path x:Name="IconeDialogo" Style="{StaticResource IconeStyle}" Stroke="{StaticResource AccentLightBrush}"
+                          Data="{StaticResource IconeInfo}" />
+                </Viewbox>
+            </Border>
+            <StackPanel>
+                <TextBlock x:Name="TxtTitulo" Style="{StaticResource TituloSecaoStyle}" TextWrapping="Wrap" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="420" Margin="0,8,0,0">
+                    <TextBlock x:Name="TxtMensagem" FontSize="14" TextWrapping="Wrap"
+                               Foreground="{StaticResource TextoSecundarioBrush}" />
+                </ScrollViewer>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Ações à direita, a principal por último -->
+        <WrapPanel x:Name="PainelBotoes" Grid.Row="1" HorizontalAlignment="Right" Margin="0,24,0,0" />
+    </Grid>
+</Window>

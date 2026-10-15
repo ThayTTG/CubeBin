@@ -26,9 +26,8 @@ public static class TemaJanelaEscura
     private const int DWMWA_CAPTION_COLOR = 35;
     private const int DWMWA_TEXT_COLOR = 36;
 
-    // Cores do tema (Theme/Colors.xaml): fundo preto primário e texto claro.
-    private static readonly uint CorFundo = ParaColorRef(0x0D, 0x0D, 0x0D);
-    private static readonly uint CorTexto = ParaColorRef(0xED, 0xED, 0xED);
+    // As cores vêm de Theme/Colors.xaml (barra de título = Barra lateral, borda = Borda,
+    // texto = Texto), para tudo continuar centralizado num lugar só.
 
     [DllImport("dwmapi.dll", PreserveSig = true)]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int valor, int tamanho);
@@ -44,7 +43,7 @@ public static class TemaJanelaEscura
         // As chamadas só têm efeito depois que o HWND nativo existe de fato — se a janela ainda
         // não foi criada, aguarda SourceInitialized em vez de ignorar silenciosamente (item 1 do
         // pedido de correção). WindowInteropHelper.Handle força a criação do HWND se chamado cedo
-        // demais, então checamos primeiro sem forçar, e só then decidimos esperar ou aplicar.
+        // demais, então checamos primeiro sem forçar, e só então decidimos esperar ou aplicar.
         if (PossuiHandleCriado(janela, out var hwnd))
         {
             AplicarNoHandle(hwnd);
@@ -74,13 +73,22 @@ public static class TemaJanelaEscura
 
         // Melhor esforço: só funcionam em builds mais novos do Windows 11. Falhas são ignoradas —
         // o resultado nesses casos é só continuar com a borda/legenda padrão do sistema.
-        var corBorda = CorFundo;
+        var corBorda = CorDoTema("BordaColor", 0x2C, 0x23, 0x47);
         DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, ref corBorda, sizeof(uint));
 
-        var corLegenda = CorFundo;
+        var corLegenda = CorDoTema("BarraLateralColor", 0x14, 0x0F, 0x24);
         DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, ref corLegenda, sizeof(uint));
 
-        var corTexto = CorTexto;
+        var corTexto = CorDoTema("TextoColor", 0xF2, 0xEE, 0xFF);
         DwmSetWindowAttribute(hwnd, DWMWA_TEXT_COLOR, ref corTexto, sizeof(uint));
+    }
+
+    /// <summary>Lê uma cor de Theme/Colors.xaml; se não achar (ex.: recurso renomeado), usa o
+    /// valor do guia da NokyLabs passado como reserva.</summary>
+    private static uint CorDoTema(string chave, byte r, byte g, byte b)
+    {
+        if (System.Windows.Application.Current?.TryFindResource(chave) is System.Windows.Media.Color cor)
+            return ParaColorRef(cor.R, cor.G, cor.B);
+        return ParaColorRef(r, g, b);
     }
 }

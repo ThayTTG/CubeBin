@@ -5,6 +5,8 @@ using CubeBin.App.Services;
 using CubeBin.Core;
 using CubeBin.Core.Models;
 using CubeBin.Core.Services;
+// Os avisos de erro grave abaixo usam a MessageBox NATIVA de propósito: se o próprio tema for a
+// causa do erro, a mensagem ainda precisa conseguir aparecer. O resto do app usa DialogoCubeBin.
 using MessageBox = System.Windows.MessageBox;
 
 namespace CubeBin.App;
@@ -130,7 +132,7 @@ public partial class App : System.Windows.Application
         catch (Exception ex)
         {
             RegistrarCrash(ex);
-            MessageBox.Show(
+            DialogoCubeBin.Show(
                 $"Não foi possível concluir a organização.\n\nDetalhes em:\n{CaminhoLogCrash}",
                 "Erro ao organizar", MessageBoxButton.OK, MessageBoxImage.Error);
         }
