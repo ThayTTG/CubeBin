@@ -14,7 +14,7 @@
     <!-- Ícone placeholder gerado a partir do SVG oficial dos "3 cubos" (ver docs/spec.md) — trocar
          o arquivo app.ico se um ícone definitivo for desenhado futuramente. -->
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <Product>CubeBin</Product>
     <AssemblyTitle>CubeBin</AssemblyTitle>
     <Company>NokyLabs</Company>

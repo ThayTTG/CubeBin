@@ -1,8 +1,19 @@
 # Especificação Técnica — Organizador de Arquivos para Windows
 
-**Versão atual: 2.5**
+**Versão atual: 2.6**
 
 ## Notas de Atualização
+
+### Nota de Atualização - 2.6 (visual novo no padrão da NokyLabs — app 1.1.0)
+O CubeBin passou a seguir o guia visual da NokyLabs (`docs/guia-visual-nokylabs.md`), como o Launcher e o YT-DLP GUI. **Nenhum comportamento mudou**: mesmas funções, fluxos, dados e configurações. Só aparência e alguns textos de interface.
+
+- **Paleta:** neutros da NokyLabs (fundo levemente arroxeado) no lugar do preto/cinza; o vermelho `#C4362E` continua como cor de identidade, com as 6 variações do guia. Estados Sucesso/Atenção/Perigo com versões suaves. Tudo em `Theme/Colors.xaml`; nenhuma tela tem hex próprio.
+- **Formas:** cantos retos → arredondados (cards 16, botões e campos 10, avisos 12). Isto substitui a decisão estética antiga de cantos retos (ver seção 8.1).
+- **Botões:** quatro tipos (Contorno, Principal, Suave, Perigo). Ações destrutivas (“Excluir definitivamente”, “Excluir arquivos aprovados”) usam Perigo, com ícone de lixeira, verbo explícito e confirmação; o vermelho fica só para a marca.
+- **Menu lateral:** 248px, cabeçalho do app (quadrado com gradiente + “CubeBin / NokyLabs”), ícones de traço que acompanham o estado (ativo em AccentLight sobre AccentSoft), rodapé com a versão e o botão de recolher. Resolve o item em aberto do relatório de polimento sobre ícones de cor fixa.
+- **Telas:** título da página + descrição + conteúdo em cards; tabelas sem grade pesada; estados vazios redesenhados em traço; Histórico com coluna “Situação” por extenso (estado nunca só pela cor).
+- **Novidades de interface:** tela **Sobre** (versão lida do assembly, “Parte da NokyLabs”, links do site, do código e de problemas); diálogo de mensagem próprio no tema (`DialogoCubeBin`), substituindo a `MessageBox` branca; menu da bandeja com as cores do guia; barra de título com as cores do guia.
+- **Textos:** menu da bandeja “Abrir configurações” → “Abrir o CubeBin” e “Executar agora” → “Organizar agora”; botões de confirmação com verbos (“Excluir definitivamente”, “Enviar e excluir”, “Ativar mesmo assim”) em vez de Sim/Não; janela de subpastas com “Salvar subpastas” no lugar de “OK”.
 
 ### Nota de Atualização - 2.5 (correção da borda DWM + rodada de polimento)
 Duas partes: fix pontual + auditoria completa do projeto. Ver `docs/RELATORIO_POLIMENTO.md` para o relatório detalhado tela por tela e arquivo por arquivo.
@@ -384,7 +395,7 @@ flowchart TD
 ## 8. Interface Gráfica de Configuração
 
 - **Stack:** C#/.NET (WPF ou WinForms — WPF recomendado para telas mais ricas no futuro).
-- **Design nesta fase:** simples, funcional, sem tema visual elaborado — foco em usabilidade até que um design padrão do produto seja definido.
+- **Design:** segue o guia visual da NokyLabs (ver 8.1).
 - **Telas mínimas:**
   1. Lista de pastas monitoradas (padrão + personalizadas), com toggle `organizar_subpastas` e aviso de risco.
   2. Editor de regras de extensão → pasta de destino.
@@ -392,6 +403,12 @@ flowchart TD
   4. Tela de Pendências (arquivos não classificados aguardando decisão).
   5. Histórico/log de execuções e backups.
 - Toda alteração feita na UI grava diretamente no `config.json`, respeitando as regras da seção 2 (pastas padrão nunca deletadas, apenas limpas/restauradas).
+
+### 8.1 Estética
+
+A aparência do CubeBin segue o **guia visual da NokyLabs**: `docs/guia-visual-nokylabs.md`. Ele substitui as decisões estéticas anteriores deste documento (paleta preto/cinza, cantos retos, avisos em âmbar próprio), que ficam registradas só como histórico nas Notas de Atualização acima.
+
+Resumo do que vale para o CubeBin: cor de identidade vermelha `#C4362E` (usada em botões principais, item ativo, foco e no ícone), neutros comuns da NokyLabs, cantos arredondados, ícones de traço, e a regra de que **vermelho é marca, não alerta**: ações destrutivas usam o estilo Perigo (coral `#F87171`) com ícone, verbo explícito e confirmação.
 
 ---
 

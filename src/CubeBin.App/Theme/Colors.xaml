@@ -2,61 +2,131 @@
                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!--
-        Paleta preto/vermelho, cantos retos, menu lateral — definida em um único lugar para não
-        espalhar hex pelos arquivos de UI. Ver spec-organizador-arquivos.md, seção de estética,
-        para o racional por trás das escolhas (vermelho reservado para acento, não para status).
+        Paleta do CubeBin no padrão visual da NokyLabs (docs/guia-visual-nokylabs.md).
+        TODAS as cores do app moram aqui: nenhuma tela, janela ou classe deve ter hex próprio.
+
+        - Neutros: iguais em todos os apps da NokyLabs (fundo escuro levemente arroxeado).
+        - Cor de identidade: o vermelho do CubeBin (#C4362E) e as suas 6 variações.
+        - Estados (Sucesso / Atenção / Perigo): sempre acompanhados de texto ou ícone, nunca só a cor.
+        - Vermelho é a marca, não um alerta: ações destrutivas usam Perigo (coral), não Accent.
+
+        As versões "suaves" usam o canal alfa (formato #AARRGGBB): 14% = 24, 16% = 29, 26% = 42.
     -->
 
-    <Color x:Key="PrimaryBlackColor">#0D0D0D</Color>
-    <Color x:Key="SidebarActiveColor">#1C1C1C</Color>
-    <Color x:Key="SidebarHoverColor">#1A1A1A</Color>
-    <Color x:Key="ContentBackgroundColor">#161616</Color>
-    <Color x:Key="FieldBackgroundColor">#0D0D0D</Color>
-    <Color x:Key="BorderLineColor">#2A2A2A</Color>
-    <Color x:Key="BorderStrongColor">#3A3A3A</Color>
+    <!-- ===================== NEUTROS DA NOKYLABS ===================== -->
+    <Color x:Key="FundoColor">#0F0B1A</Color>
+    <Color x:Key="BarraLateralColor">#140F24</Color>
+    <Color x:Key="SuperficieColor">#1B1530</Color>
+    <Color x:Key="SuperficieHoverColor">#231B3E</Color>
+    <Color x:Key="SuperficieElevadaColor">#2A2149</Color>
+    <Color x:Key="BordaColor">#2C2347</Color>
+    <Color x:Key="BordaForteColor">#3B3160</Color>
+    <Color x:Key="TextoColor">#F2EEFF</Color>
+    <Color x:Key="TextoSecundarioColor">#A99FC7</Color>
+    <Color x:Key="TextoApagadoColor">#6E6491</Color>
+    <Color x:Key="TextoSobreAccentColor">#FFFFFF</Color>
 
+    <!-- ===================== COR DE IDENTIDADE (vermelho do CubeBin) ===================== -->
     <Color x:Key="AccentColor">#C4362E</Color>
-    <Color x:Key="AccentHoverColor">#A32D26</Color>
-    <Color x:Key="AccentPressedColor">#872520</Color>
+    <Color x:Key="AccentHoverColor">#D64A40</Color>
+    <Color x:Key="AccentPressedColor">#A32D26</Color>
+    <Color x:Key="AccentLightColor">#F4A7A1</Color>
+    <Color x:Key="AccentSoftColor">#29C4362E</Color>
+    <Color x:Key="AccentSoftHoverColor">#42C4362E</Color>
 
-    <Color x:Key="TextPrimaryColor">#EDEDED</Color>
-    <Color x:Key="TextSecondaryColor">#8A8A8A</Color>
-    <Color x:Key="TextOnAccentColor">#FFFFFF</Color>
+    <!-- ===================== ESTADOS ===================== -->
+    <Color x:Key="SucessoColor">#34D399</Color>
+    <Color x:Key="SucessoSuaveColor">#2434D399</Color>
+    <Color x:Key="SucessoBordaColor">#4234D399</Color>
+    <Color x:Key="AtencaoColor">#FBBF24</Color>
+    <Color x:Key="AtencaoSuaveColor">#24FBBF24</Color>
+    <Color x:Key="AtencaoBordaColor">#42FBBF24</Color>
+    <Color x:Key="PerigoColor">#F87171</Color>
+    <Color x:Key="PerigoSuaveColor">#24F87171</Color>
+    <Color x:Key="PerigoBordaColor">#42F87171</Color>
 
-    <!-- Avisos genuínos (erro/atenção) ficam num âmbar distinto do vermelho de marca, para o
-         vermelho continuar significando só "ação/marca" e não competir com sinalização real. -->
-    <Color x:Key="WarningBackgroundColor">#3D3319</Color>
-    <Color x:Key="WarningBorderColor">#5A4614</Color>
-    <Color x:Key="WarningTextColor">#E8C77A</Color>
+    <!-- ===================== ILUSTRAÇÕES ===================== -->
+    <!-- Estados vazios: traço em Texto apagado, faces em tons de superfície. Ficam sem a cor de
+         identidade de propósito, para não serem confundidas com os Cubos de verdade da nuvem. -->
+    <Color x:Key="IlustracaoTracoColor">#6E6491</Color>
+    <Color x:Key="IlustracaoFaceClaraColor">#2A2149</Color>
+    <Color x:Key="IlustracaoFaceColor">#231B3E</Color>
+    <Color x:Key="IlustracaoFaceEscuraColor">#1B1530</Color>
 
-    <!-- Cores de estado do Recall (item 3 do feedback de estética) — tons escuros/saturados
-         pensados para fundo preto, substituindo os pastéis originais (pensados para fundo claro). -->
-    <Color x:Key="RecallAtivoColor">#1B2C3D</Color>
-    <Color x:Key="RecallPendenteColor">#3D3319</Color>
-    <Color x:Key="RecallRestauradoColor">#1C3325</Color>
+    <!-- Cubos da galeria (pacotes reais): faces no vermelho do app, traço na versão clara. -->
+    <Color x:Key="CuboTracoColor">#F4A7A1</Color>
+    <Color x:Key="CuboTopoColor">#B3D64A40</Color>
+    <Color x:Key="CuboEsquerdaColor">#99C4362E</Color>
+    <Color x:Key="CuboDireitaColor">#8CA32D26</Color>
 
-    <SolidColorBrush x:Key="PrimaryBlackBrush" Color="{StaticResource PrimaryBlackColor}" />
-    <SolidColorBrush x:Key="SidebarActiveBrush" Color="{StaticResource SidebarActiveColor}" />
-    <SolidColorBrush x:Key="SidebarHoverBrush" Color="{StaticResource SidebarHoverColor}" />
-    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="{StaticResource ContentBackgroundColor}" />
-    <SolidColorBrush x:Key="FieldBackgroundBrush" Color="{StaticResource FieldBackgroundColor}" />
-    <SolidColorBrush x:Key="BorderLineBrush" Color="{StaticResource BorderLineColor}" />
-    <SolidColorBrush x:Key="BorderStrongBrush" Color="{StaticResource BorderStrongColor}" />
+    <!-- ===================== PINCÉIS (Brush) ===================== -->
+    <SolidColorBrush x:Key="FundoBrush" Color="{StaticResource FundoColor}" />
+    <SolidColorBrush x:Key="BarraLateralBrush" Color="{StaticResource BarraLateralColor}" />
+    <SolidColorBrush x:Key="SuperficieBrush" Color="{StaticResource SuperficieColor}" />
+    <SolidColorBrush x:Key="SuperficieHoverBrush" Color="{StaticResource SuperficieHoverColor}" />
+    <SolidColorBrush x:Key="SuperficieElevadaBrush" Color="{StaticResource SuperficieElevadaColor}" />
+    <SolidColorBrush x:Key="BordaBrush" Color="{StaticResource BordaColor}" />
+    <SolidColorBrush x:Key="BordaForteBrush" Color="{StaticResource BordaForteColor}" />
+    <SolidColorBrush x:Key="TextoBrush" Color="{StaticResource TextoColor}" />
+    <SolidColorBrush x:Key="TextoSecundarioBrush" Color="{StaticResource TextoSecundarioColor}" />
+    <SolidColorBrush x:Key="TextoApagadoBrush" Color="{StaticResource TextoApagadoColor}" />
+    <SolidColorBrush x:Key="TextoSobreAccentBrush" Color="{StaticResource TextoSobreAccentColor}" />
 
     <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
     <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentHoverColor}" />
     <SolidColorBrush x:Key="AccentPressedBrush" Color="{StaticResource AccentPressedColor}" />
+    <SolidColorBrush x:Key="AccentLightBrush" Color="{StaticResource AccentLightColor}" />
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="{StaticResource AccentSoftColor}" />
+    <SolidColorBrush x:Key="AccentSoftHoverBrush" Color="{StaticResource AccentSoftHoverColor}" />
 
-    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
-    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
-    <SolidColorBrush x:Key="TextOnAccentBrush" Color="{StaticResource TextOnAccentColor}" />
+    <SolidColorBrush x:Key="SucessoBrush" Color="{StaticResource SucessoColor}" />
+    <SolidColorBrush x:Key="SucessoSuaveBrush" Color="{StaticResource SucessoSuaveColor}" />
+    <SolidColorBrush x:Key="SucessoBordaBrush" Color="{StaticResource SucessoBordaColor}" />
+    <SolidColorBrush x:Key="AtencaoBrush" Color="{StaticResource AtencaoColor}" />
+    <SolidColorBrush x:Key="AtencaoSuaveBrush" Color="{StaticResource AtencaoSuaveColor}" />
+    <SolidColorBrush x:Key="AtencaoBordaBrush" Color="{StaticResource AtencaoBordaColor}" />
+    <SolidColorBrush x:Key="PerigoBrush" Color="{StaticResource PerigoColor}" />
+    <SolidColorBrush x:Key="PerigoSuaveBrush" Color="{StaticResource PerigoSuaveColor}" />
+    <SolidColorBrush x:Key="PerigoBordaBrush" Color="{StaticResource PerigoBordaColor}" />
 
-    <SolidColorBrush x:Key="WarningBackgroundBrush" Color="{StaticResource WarningBackgroundColor}" />
-    <SolidColorBrush x:Key="WarningBorderBrush" Color="{StaticResource WarningBorderColor}" />
-    <SolidColorBrush x:Key="WarningTextBrush" Color="{StaticResource WarningTextColor}" />
+    <SolidColorBrush x:Key="IlustracaoTracoBrush" Color="{StaticResource IlustracaoTracoColor}" />
+    <SolidColorBrush x:Key="IlustracaoFaceClaraBrush" Color="{StaticResource IlustracaoFaceClaraColor}" />
+    <SolidColorBrush x:Key="IlustracaoFaceBrush" Color="{StaticResource IlustracaoFaceColor}" />
+    <SolidColorBrush x:Key="IlustracaoFaceEscuraBrush" Color="{StaticResource IlustracaoFaceEscuraColor}" />
 
-    <SolidColorBrush x:Key="RecallAtivoBrush" Color="{StaticResource RecallAtivoColor}" />
-    <SolidColorBrush x:Key="RecallPendenteBrush" Color="{StaticResource RecallPendenteColor}" />
-    <SolidColorBrush x:Key="RecallRestauradoBrush" Color="{StaticResource RecallRestauradoColor}" />
+    <SolidColorBrush x:Key="CuboTracoBrush" Color="{StaticResource CuboTracoColor}" />
+    <SolidColorBrush x:Key="CuboTopoBrush" Color="{StaticResource CuboTopoColor}" />
+    <SolidColorBrush x:Key="CuboEsquerdaBrush" Color="{StaticResource CuboEsquerdaColor}" />
+    <SolidColorBrush x:Key="CuboDireitaBrush" Color="{StaticResource CuboDireitaColor}" />
+
+    <!-- Cabeçalho do app (quadrado 42x42 do menu lateral e da tela Sobre): gradiente diagonal
+         da AccentPressed para a AccentLight, como define o guia. -->
+    <LinearGradientBrush x:Key="CabecalhoAppBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource AccentPressedColor}" Offset="0" />
+        <GradientStop Color="{StaticResource AccentLightColor}" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- ===================== CHAVES ANTIGAS (compatibilidade) ===================== -->
+    <!-- Nomes usados antes do redesenho, mantidos com os valores novos para nenhuma referência
+         antiga (inclusive no code-behind) quebrar. Prefira as chaves novas acima. -->
+    <SolidColorBrush x:Key="PrimaryBlackBrush" Color="{StaticResource FundoColor}" />
+    <SolidColorBrush x:Key="FieldBackgroundBrush" Color="{StaticResource SuperficieColor}" />
+    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="{StaticResource FundoColor}" />
+    <SolidColorBrush x:Key="SidebarHoverBrush" Color="{StaticResource SuperficieHoverColor}" />
+    <SolidColorBrush x:Key="SidebarActiveBrush" Color="{StaticResource AccentSoftColor}" />
+    <SolidColorBrush x:Key="BorderLineBrush" Color="{StaticResource BordaColor}" />
+    <SolidColorBrush x:Key="BorderStrongBrush" Color="{StaticResource BordaForteColor}" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextoColor}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextoSecundarioColor}" />
+    <SolidColorBrush x:Key="TextOnAccentBrush" Color="{StaticResource TextoSobreAccentColor}" />
+    <SolidColorBrush x:Key="WarningBackgroundBrush" Color="{StaticResource AtencaoSuaveColor}" />
+    <SolidColorBrush x:Key="WarningBorderBrush" Color="{StaticResource AtencaoBordaColor}" />
+    <SolidColorBrush x:Key="WarningTextBrush" Color="{StaticResource AtencaoColor}" />
+
+    <!-- Estados do Recall: Organizado = Superfície elevada (texto AccentLight), Será devolvido =
+         Atenção 14%, Devolvido = Sucesso 14%. A grade também mostra o estado por extenso. -->
+    <SolidColorBrush x:Key="RecallAtivoBrush" Color="{StaticResource SuperficieElevadaColor}" />
+    <SolidColorBrush x:Key="RecallPendenteBrush" Color="{StaticResource AtencaoSuaveColor}" />
+    <SolidColorBrush x:Key="RecallRestauradoBrush" Color="{StaticResource SucessoSuaveColor}" />
 
 </ResourceDictionary>

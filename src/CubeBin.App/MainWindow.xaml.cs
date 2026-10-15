@@ -8,7 +8,8 @@ using Microsoft.Win32;
 using CubeBin.Core;
 using CubeBin.Core.Models;
 using CubeBin.Core.Services;
-using MessageBox = System.Windows.MessageBox;
+// MessageBox aponta para o diálogo no tema da NokyLabs (mesma forma de chamar da MessageBox nativa).
+using MessageBox = CubeBin.App.DialogoCubeBin;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using Button = System.Windows.Controls.Button;
 using ColumnDefinition = System.Windows.Controls.ColumnDefinition;
@@ -54,8 +55,13 @@ public partial class MainWindow : Window
     private bool _bloqueandoTrocaDeAba;
 
     // ===================== Sidebar recolhível (item 3 do refinamento visual) =====================
+    private const double LarguraSidebarAberta = 248;
+    private const double LarguraSidebarRecolhida = 68;
     private ColumnDefinition? _colunaSidebar;
     private Button? _botaoRecolherSidebar;
+    private FrameworkElement? _painelNomeApp;
+    private FrameworkElement? _cardVersao;
+    private TextBlock? _txtRecolherMenu;
     private bool _sidebarRecolhida;
     private List<TextBlock> _textosAbaSidebar = new();
 
@@ -122,8 +128,10 @@ public partial class MainWindow : Window
         _textosAbaSidebar = new List<TextBlock>
         {
             TxtLabelOrganizar, TxtLabelLimpar, TxtLabelDeletar, TxtLabelSugestoes,
-            TxtLabelCubos, TxtLabelHistorico, TxtLabelConfiguracoes, TxtLabelLogin
+            TxtLabelCubos, TxtLabelHistorico, TxtLabelConfiguracoes, TxtLabelLogin, TxtLabelSobre
         };
+
+        TxtVersaoSobre.Text = $"Versão {InfoApp.Versao}";
 
         // As partes nomeadas dentro do template do TabControl (coluna da sidebar, botão de
         // recolher) só existem depois que o template é aplicado — Loaded garante isso.
@@ -140,6 +148,12 @@ public partial class MainWindow : Window
         AbaPrincipal.ApplyTemplate();
         _colunaSidebar = AbaPrincipal.Template.FindName("ColunaSidebar", AbaPrincipal) as ColumnDefinition;
         _botaoRecolherSidebar = AbaPrincipal.Template.FindName("BotaoRecolherSidebar", AbaPrincipal) as Button;
+        _painelNomeApp = AbaPrincipal.Template.FindName("PainelNomeApp", AbaPrincipal) as FrameworkElement;
+        _cardVersao = AbaPrincipal.Template.FindName("CardVersao", AbaPrincipal) as FrameworkElement;
+        _txtRecolherMenu = AbaPrincipal.Template.FindName("TxtRecolherMenu", AbaPrincipal) as TextBlock;
+
+        if (AbaPrincipal.Template.FindName("TxtVersaoSidebar", AbaPrincipal) is TextBlock txtVersao)
+            txtVersao.Text = $"CubeBin {InfoApp.Versao}";
 
         if (_botaoRecolherSidebar is not null)
             _botaoRecolherSidebar.Click += (_, _) => AlternarSidebarRecolhida();
@@ -150,11 +164,39 @@ public partial class MainWindow : Window
         _sidebarRecolhida = !_sidebarRecolhida;
 
         if (_colunaSidebar is not null)
-            _colunaSidebar.Width = new GridLength(_sidebarRecolhida ? 56 : 196);
+            _colunaSidebar.Width = new GridLength(_sidebarRecolhida ? LarguraSidebarRecolhida : LarguraSidebarAberta);
 
         var visibilidade = _sidebarRecolhida ? Visibility.Collapsed : Visibility.Visible;
         foreach (var texto in _textosAbaSidebar)
             texto.Visibility = visibilidade;
+
+        // Recolhido: só os ícones centralizados (o nome de cada aba aparece na dica ao passar o mouse).
+        if (_painelNomeApp is not null) _painelNomeApp.Visibility = visibilidade;
+        if (_cardVersao is not null) _cardVersao.Visibility = visibilidade;
+        if (_txtRecolherMenu is not null) _txtRecolherMenu.Visibility = visibilidade;
+
+        if (_botaoRecolherSidebar is not null)
+        {
+            _botaoRecolherSidebar.Tag = FindResource(_sidebarRecolhida ? "IconePainelAbrir" : "IconePainelFechar");
+            _botaoRecolherSidebar.ToolTip = _sidebarRecolhida ? "Expandir menu" : "Recolher menu";
+        }
+    }
+
+    // ===================== SOBRE =====================
+
+    private void BtnSobreSite_Click(object sender, RoutedEventArgs e) => AbrirLink(InfoApp.UrlSite);
+
+    private void BtnSobreGithub_Click(object sender, RoutedEventArgs e) => AbrirLink(InfoApp.UrlCodigo);
+
+    private void BtnSobreProblema_Click(object sender, RoutedEventArgs e) => AbrirLink(InfoApp.UrlProblema);
+
+    private static void AbrirLink(string url)
+    {
+        if (!InfoApp.AbrirNoNavegador(url))
+        {
+            MessageBox.Show($"Não deu para abrir o navegador. Copie o endereço:\n{url}", "CubeBin",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 
     /// <summary>
@@ -1140,6 +1182,7 @@ public partial class MainWindow : Window
                 _pendenteRestauro = value;
                 OnPropertyChanged(nameof(PendenteRestauro));
                 OnPropertyChanged(nameof(CorLinha));
+                OnPropertyChanged(nameof(SituacaoTexto));
             }
         }
 
@@ -1147,6 +1190,11 @@ public partial class MainWindow : Window
         public string CorLinha =>
             Item.Status == "Restaurado" ? "Verde" :
             PendenteRestauro ? "Amarelo" : "Azul";
+
+        /// <summary>O mesmo estado de CorLinha, escrito: a cor nunca é a única forma de saber.</summary>
+        public string SituacaoTexto =>
+            Item.Status == "Restaurado" ? "Devolvido" :
+            PendenteRestauro ? "Será devolvido" : "Organizado";
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -1276,7 +1324,8 @@ public partial class MainWindow : Window
             "Essa ação NÃO pode ser desfeita pelo CubeBin — não passa pelo Recall. Um backup em CSV " +
             "do que será apagado é gerado antes, mas ele é só um registro em texto, não uma cópia " +
             "dos arquivos.\n\nConfirma a exclusão definitiva?",
-            "Confirmar exclusão definitiva", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+            "Confirmar exclusão definitiva", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No,
+            textoConfirmar: "Excluir definitivamente", textoCancelar: "Cancelar", perigo: true);
 
         if (confirmar != MessageBoxResult.Yes) return;
 
@@ -1289,7 +1338,8 @@ public partial class MainWindow : Window
             var continuar = MessageBox.Show(
                 $"Não foi possível gerar o backup em CSV antes da exclusão: {ex.Message}\n\n" +
                 "Excluir mesmo assim, sem esse registro?",
-                "Falha ao gerar backup", MessageBoxButton.YesNo, MessageBoxImage.Error, MessageBoxResult.No);
+                "Falha ao gerar backup", MessageBoxButton.YesNo, MessageBoxImage.Error, MessageBoxResult.No,
+                textoConfirmar: "Excluir mesmo assim", textoCancelar: "Cancelar", perigo: true);
 
             if (continuar != MessageBoxResult.Yes) return;
         }
@@ -1388,7 +1438,8 @@ public partial class MainWindow : Window
         var confirmar = MessageBox.Show(
             $"Enviar {caminhosArquivos.Count} arquivo(s) para o Google Drive num pacote de backup, e só " +
             "então excluir localmente?\n\nSe o envio falhar ou for interrompido, nenhum arquivo local será apagado.",
-            "Confirmar backup e exclusão", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+            "Confirmar backup e exclusão", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No,
+            textoConfirmar: "Enviar e excluir", textoCancelar: "Cancelar");
 
         if (confirmar != MessageBoxResult.Yes) return;
 
@@ -1580,7 +1631,8 @@ public partial class MainWindow : Window
             $"{FormatarBytes.Formatar(totalBytes)}?\n\n" +
             "Essa ação não pode ser desfeita pelo CubeBin — não passa pelo Recall. Um backup em CSV " +
             "do que será apagado é gerado antes.",
-            "Confirmar exclusão", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+            "Confirmar exclusão", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No,
+            textoConfirmar: "Excluir definitivamente", textoCancelar: "Cancelar", perigo: true);
 
         if (confirmar != MessageBoxResult.Yes) return;
 
@@ -1598,7 +1650,8 @@ public partial class MainWindow : Window
             var continuar = MessageBox.Show(
                 $"Não foi possível gerar o backup em CSV antes da exclusão: {ex.Message}\n\n" +
                 "Excluir mesmo assim, sem esse registro?",
-                "Falha ao gerar backup", MessageBoxButton.YesNo, MessageBoxImage.Error, MessageBoxResult.No);
+                "Falha ao gerar backup", MessageBoxButton.YesNo, MessageBoxImage.Error, MessageBoxResult.No,
+                textoConfirmar: "Excluir mesmo assim", textoCancelar: "Cancelar", perigo: true);
 
             if (continuar != MessageBoxResult.Yes) return;
         }
@@ -1716,6 +1769,8 @@ public partial class MainWindow : Window
         public PacoteBackup Pacote { get; }
         public string NomeArquivoZip => Pacote.NomeArquivoZip;
         public string TamanhoTexto => FormatarBytes.Formatar(Pacote.TamanhoBytes);
+        public string DataTexto => $"Enviado em {Pacote.EnviadoEm:dd/MM/yyyy HH:mm}";
+        public string DetalheTexto => $"{TamanhoTexto} · {Pacote.Itens.Count} arquivo(s)";
 
         /// <summary>Opacidade proporcional ao tamanho do pacote em relação ao maior já enviado —
         /// pacotes grandes ficam mais sólidos, pequenos mais translúcidos (Camada 4).</summary>
