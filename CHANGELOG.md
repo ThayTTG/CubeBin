@@ -5,6 +5,8 @@ Tudo o que muda no CubeBin, versão por versão. O texto de cada versão vira as
 **Como usar:** anote as mudanças em `## [Não lançado]` enquanto trabalha. Na hora de lançar, é só aumentar o `<Version>` no `.csproj` e enviar para o branch `release`: o lançamento usa essa seção e ela vira a seção da versão sozinha.
 
 ## [Não lançado]
+
+## [1.1.0] - 2026-10-15
 - Visual novo, no padrão da NokyLabs: cores, cantos arredondados, ícones e menu lateral iguais aos dos outros apps da família. O vermelho continua sendo a cor do CubeBin.
 - Botões que apagam arquivos de vez agora aparecem em coral, com ícone de lixeira, para não serem confundidos com os outros.
 - As mensagens e confirmações do app ganharam o mesmo visual escuro, com botões que dizem o que vão fazer (por exemplo, “Excluir definitivamente” em vez de “Sim”).
