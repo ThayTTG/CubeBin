@@ -40,6 +40,20 @@ jobs:
           if ("${{ github.ref_type }}" -eq "tag") { $tag = "${{ github.ref_name }}" } else { $tag = "v$v" }
           "tag=$tag" >> $env:GITHUB_OUTPUT
 
+      - name: Conferir se a versão é nova
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ steps.versao.outputs.tag }}"
+          gh release view $tag --repo "${{ github.repository }}" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "::error title=Versão já lançada::A versão $tag já existe. Aumente o <Version> no .csproj (ex.: 1.0.0 → 1.0.1) e envie de novo para o branch release."
+            exit 1
+          }
+          Write-Host "A versão $tag é nova. Seguindo com o lançamento."
+          exit 0
+
       - name: Preparar credenciais do Google Drive
         shell: pwsh
         env:
