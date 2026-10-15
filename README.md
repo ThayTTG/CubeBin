@@ -106,7 +106,7 @@ dotnet publish src/CubeBin.App/CubeBin.App.csproj -c Release -p:PublishProfile=S
 
 O executável final fica em:
 ```
-src/CubeBin.App/bin/Release/net8.0-windows10.0.19041.0/win-x64/publish/CubeBin.App.exe
+src/CubeBin.App/bin/Release/net8.0-windows10.0.19041.0/win-x64/publish/CubeBin.exe
 ```
 
 **Via Visual Studio:** botão direito no projeto `CubeBin.App` → Publicar → escolher o

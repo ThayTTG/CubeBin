@@ -5,7 +5,7 @@
 ## Notas de Atualização
 
 ### Nota de Atualização - 2.5 (correção da borda DWM + rodada de polimento)
-Duas partes: fix pontual + auditoria completa do projeto. Ver `RELATORIO_POLIMENTO.md` na raiz para o relatório detalhado tela por tela e arquivo por arquivo.
+Duas partes: fix pontual + auditoria completa do projeto. Ver `docs/RELATORIO_POLIMENTO.md` para o relatório detalhado tela por tela e arquivo por arquivo.
 
 - **Borda branca residual corrigida**: `TemaJanelaEscura.cs` agora também aplica `DWMWA_BORDER_COLOR` (34), `DWMWA_CAPTION_COLOR` (35) e `DWMWA_TEXT_COLOR` (36), além do `DWMWA_USE_IMMERSIVE_DARK_MODE` já existente — a "borda de destaque" do Windows 11 é controlada separadamente da barra de título, por isso continuava branca mesmo com o modo escuro já funcionando.
 - **Achado sério corrigido**: `PendenciaService`, `RecallService`, `SugestaoService` e `PacoteBackupService` não tratavam JSON corrompido — como os quatro carregam no construtor da `MainWindow`, um arquivo corrompido em qualquer um deles derrubava o app inteiro antes de abrir. Novo `ArquivoJsonUtils.CarregarListaResiliente<T>` usado pelos quatro: renomeia o arquivo problemático (`.corrompido-{timestamp}`) e segue com lista vazia em vez de propagar a exceção.
