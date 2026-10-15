@@ -5,6 +5,8 @@ Tudo o que muda no CubeBin, versão por versão. O texto de cada versão vira as
 **Como usar:** anote as mudanças em `## [Não lançado]` enquanto trabalha. Na hora de lançar, é só aumentar o `<Version>` no `.csproj` e enviar para o branch `release`: o lançamento usa essa seção e ela vira a seção da versão sozinha.
 
 ## [Não lançado]
+
+## [1.0.1] - 2026-10-15
 - O executável agora se chama `CubeBin.exe`.
 - Se o CubeBin abria junto com o Windows, abra-o uma vez depois de atualizar para ele registrar o caminho novo.
 
