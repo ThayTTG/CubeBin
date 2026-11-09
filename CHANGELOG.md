@@ -5,6 +5,8 @@ Tudo o que muda no CubeBin, versão por versão. O texto de cada versão vira as
 **Como usar:** anote as mudanças em `## [Não lançado]` enquanto trabalha. Na hora de lançar, é só aumentar o `<Version>` no `.csproj` e enviar para o branch `release`: o lançamento usa essa seção e ela vira a seção da versão sozinha.
 
 ## [Não lançado]
+
+## [2.0.0] - 2026-11-09
 - Motor gráfico novo (Avalonia), no padrão de todos os apps da NokyLabs: o mesmo visual e as mesmas animações do launcher, do ValReport e do YT-DLP GUI, no vermelho do CubeBin. Tudo continua funcionando do mesmo jeito.
 - No canto do menu lateral: "Idealizado e aprovado por Thayna Dias" e "Desenvolvido com IA (Claude, da Anthropic)". A tela **Sobre** ganhou os créditos de quem fez e das ferramentas usadas.
 - A tela Deletar já abre mostrando a área para arrastar os arquivos.
