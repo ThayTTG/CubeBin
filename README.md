@@ -1,6 +1,6 @@
 # CubeBin
 
-Aplicativo Windows (C#/.NET, WPF) organizado em 3 módulos — **Organizar**, **Limpar** e
+Aplicativo Windows (C#/.NET 8, interface em Avalonia com o Kit NokyLabs) organizado em 3 módulos — **Organizar**, **Limpar** e
 **Deletar** — mais as abas de apoio **Sugestões**, **Cubos**, **Histórico** e **Login**. Roda em
 segundo plano e organiza arquivos automaticamente apenas quando o usuário está ausente; os
 módulos Limpar, Deletar e o agente de Sugestões são sempre acionados manualmente ou, no caso do
@@ -42,24 +42,46 @@ src/
     Interop/
       NativeMethods.cs          # P/Invoke do Win32 (GetLastInputInfo)
 
-  CubeBin.App/      # WPF: UI, bandeja do sistema, agendador
-    App.xaml(.cs)               # Bootstrap: monta os services e inicia o agendador
-    MainWindow.xaml(.cs)        # UI mínima com 5 abas (pastas, regras, config, pendências, histórico)
+  CubeBin.App/      # Avalonia: UI, bandeja do sistema, agendador
+    App.axaml(.cs)              # Bootstrap: monta os services, o agendador e a bandeja; ícones e visual das tabelas
+    Program.cs                  # Ponto de partida (e o aviso nativo de erro grave)
+    MainWindow.axaml(.cs)       # Menu lateral recolhível + 9 telas (Organizar ... Sobre)
+    SubpastasWindow / DetalhesPacoteWindow / JanelaDialogo   # Janelas auxiliares
+    DialogoCubeBin.cs           # Diálogo no visual NokyLabs com a mesma forma de chamar da MessageBox
+    TemaJanelaEscura.cs         # Barra de título escura do Windows
     TrayIconManager.cs          # Ícone de bandeja (processo residente)
     BackgroundScheduler.cs      # Timer que dispara ciclos do OrganizadorService
     Services/
       ToastNotificationService.cs  # Implementação de INotificationService com toast nativo
+lib/
+  NokyLabs.UI/      # Submódulo Git: o Kit NokyLabs (cores, botões, animações, créditos)
+tests/
+  CubeBin.Tests/    # Testes das regras sem tela (agendamentos, configuração, classificação)
 ```
+
+### O Kit NokyLabs (submódulo)
+
+A aparência vem da biblioteca [NokyLabs.UI](https://github.com/ThayTTG/NokyLabs.UI), presa em
+`lib/NokyLabs.UI` como submódulo. Ao clonar, traga junto:
+
+```
+git clone --recurse-submodules https://github.com/ThayTTG/CubeBin.git
+```
+
+(Se já clonou sem ele: `git submodule update --init`.) Para trazer uma versão nova do Kit:
+`git submodule update --remote lib/NokyLabs.UI`.
 
 ## Como abrir
 
-1. Instale o .NET 8 SDK com workload de desenvolvimento desktop (Visual Studio 2022 ou `dotnet` CLI).
+1. Instale o .NET 8 SDK (Visual Studio 2022, Rider ou só o `dotnet` CLI).
 2. Abra `CubeBin.sln` no Visual Studio, **ou**:
    ```
    dotnet restore
    dotnet build
-   dotnet run --project src/CubeBin.App
+   dotnet test tests/CubeBin.Tests
+   dotnet run --project src/CubeBin.App -- --abrir
    ```
+   O CubeBin abre só na bandeja (perto do relógio), como sempre; o `--abrir` já mostra a janela.
 3. Na primeira execução, o `ConfigService` cria automaticamente um `config.json` padrão em
    `%LOCALAPPDATA%\CubeBin\config.json`, com Documentos, Área de Trabalho e Downloads
    já cadastrados como pastas padrão.
@@ -74,7 +96,7 @@ src/
 - Detecção de ausência via Win32 API.
 - Ícone de bandeja + agendador em background.
 - Toast nativo com botão de cancelar.
-- UI WPF completa nas 8 abas atuais: Organizar (Regras de extensão + Pendências), Limpar, Deletar,
+- UI completa (Avalonia + Kit NokyLabs, desde a 2.0; antes era WPF) nas 8 abas atuais: Organizar (Regras de extensão + Pendências), Limpar, Deletar,
   Sugestões (agente opcional), Cubos (pacotes de backup na nuvem), Histórico (absorve o Recall),
   Configurações (agendamento, diretórios, iniciar com Windows) e Login. Ver "Estrutura" acima e
   `docs/spec.md` para o detalhamento de cada uma.
@@ -89,14 +111,14 @@ src/
   arquivo ao local original. O backup em CSV continua existindo sem alterações, como registro
   legado independente.
 - UX das Regras de extensão revista: 1 clique seleciona, 2 cliques edita o texto da célula
-  (comportamento padrão do DataGrid, sem mais interceptação nossa), botão direito mostra um menu
+  (comportamento padrão da tabela, sem mais interceptação nossa), botão direito mostra um menu
   contextual com "Editar &lt;coluna clicada&gt;", "Editar subpastas por extensão" e "Remover regra".
 - Perfil de publicação single-file self-contained para distribuir como um único `.exe`.
 
 ## Distribuição como .exe único (sem instalar dependências)
 
 O projeto inclui um perfil de publicação (`src/CubeBin.App/Properties/PublishProfiles/SingleFile-win-x64.pubxml`)
-que gera um único `.exe` autocontido — o usuário final não precisa instalar o .NET Desktop Runtime
+que gera um único `.exe` autocontido — o usuário final não precisa instalar o .NET
 separadamente, só rodar o arquivo.
 
 **Via linha de comando:**

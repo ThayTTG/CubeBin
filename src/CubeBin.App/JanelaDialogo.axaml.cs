@@ -1,10 +1,7 @@
-using System.Windows;
-using MessageBoxButton = System.Windows.MessageBoxButton;
-using MessageBoxImage = System.Windows.MessageBoxImage;
-using MessageBoxResult = System.Windows.MessageBoxResult;
-using Button = System.Windows.Controls.Button;
-using Brush = System.Windows.Media.Brush;
-using Geometry = System.Windows.Media.Geometry;
+using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
+using Avalonia.Input;
+using Avalonia.Media;
 
 namespace CubeBin.App;
 
@@ -14,6 +11,11 @@ namespace CubeBin.App;
 public partial class JanelaDialogo : Window
 {
     public MessageBoxResult Resultado { get; private set; }
+
+    public JanelaDialogo() : this("", "CubeBin", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, null, null, false)
+    {
+        // Só para o previewer do Avalonia.
+    }
 
     internal JanelaDialogo(string mensagem, string titulo, MessageBoxButton botoes, MessageBoxImage icone,
         MessageBoxResult padrao, string? textoConfirmar, string? textoCancelar, bool perigo)
@@ -26,21 +28,19 @@ public partial class JanelaDialogo : Window
         TxtMensagem.Text = mensagem;
         AplicarIcone(icone);
 
-        // Esc fecha como "Não"/"Cancelar" (o resultado padrão definido logo abaixo). Feito à mão
-        // em vez de IsCancel, porque um botão IsCancel tenta fechar a janela uma segunda vez
-        // depois do próprio clique já ter fechado.
-        PreviewKeyDown += (_, e) =>
-        {
-            if (e.Key == System.Windows.Input.Key.Escape)
-                DialogResult = false;
-        };
-
         // Resultado ao fechar pelo X / Esc, como na MessageBox: "Não"/"Cancelar" quando existem.
         Resultado = botoes switch
         {
             MessageBoxButton.YesNo => MessageBoxResult.No,
             MessageBoxButton.YesNoCancel or MessageBoxButton.OKCancel => MessageBoxResult.Cancel,
             _ => MessageBoxResult.OK
+        };
+
+        // Esc fecha com o resultado padrão definido logo acima.
+        KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Escape)
+                Close();
         };
 
         // Ordem do guia: ações à direita, a principal por último.
@@ -68,21 +68,17 @@ public partial class JanelaDialogo : Window
     private void AdicionarBotao(string texto, MessageBoxResult resultado, bool principal, bool perigo,
         MessageBoxResult padrao)
     {
-        var botao = new Button
-        {
-            Content = texto,
-            Margin = new Thickness(8, 0, 0, 0),
-            MinWidth = 88
-        };
+        var botao = new Button { Content = texto, MinWidth = 96 };
+        botao.Classes.Add("ic");
 
         if (perigo)
         {
-            botao.Style = (Style)FindResource("BotaoPerigoStyle");
-            botao.Tag = FindResource("IconeLixeira");
+            botao.Classes.Add("danger");
+            botao.Tag = this.FindResource("IconeLixeira");
         }
-        else if (principal)
+        else
         {
-            botao.Style = (Style)FindResource("PrimaryButtonStyle");
+            botao.Classes.Add(principal ? "primary" : "secondary");
         }
 
         // Botão padrão (Enter): o que a chamada pediu; sem pedido, o principal. Nas exclusões o
@@ -90,12 +86,12 @@ public partial class JanelaDialogo : Window
         var ehPadrao = padrao == MessageBoxResult.None ? principal : padrao == resultado;
         botao.IsDefault = ehPadrao;
         if (ehPadrao)
-            Loaded += (_, _) => botao.Focus();
+            Opened += (_, _) => botao.Focus();
 
         botao.Click += (_, _) =>
         {
             Resultado = resultado;
-            DialogResult = true;
+            Close();
         };
 
         PainelBotoes.Children.Add(botao);
@@ -103,18 +99,16 @@ public partial class JanelaDialogo : Window
 
     private void AplicarIcone(MessageBoxImage icone)
     {
-        // MessageBoxImage tem valores repetidos (Error = Hand = Stop; Warning = Exclamation;
-        // Information = Asterisk), então o switch usa só um nome de cada.
         var (chaveIcone, chaveCor, chaveFundo) = icone switch
         {
-            MessageBoxImage.Error => ("IconeErro", "PerigoBrush", "PerigoSuaveBrush"),
-            MessageBoxImage.Warning => ("IconeAlerta", "AtencaoBrush", "AtencaoSuaveBrush"),
-            MessageBoxImage.Question => ("IconeDuvida", "AccentLightBrush", "AccentSoftBrush"),
-            _ => ("IconeInfo", "AccentLightBrush", "AccentSoftBrush")
+            MessageBoxImage.Error => ("IconeErro", "DangerBrush", "DangerSoftBrush"),
+            MessageBoxImage.Warning => ("IconeAlerta", "WarningBrush", "WarningSoftBrush"),
+            MessageBoxImage.Question => ("IconeDuvida", "AccentTextBrush", "AccentSoftBrush"),
+            _ => ("IconeInfo", "AccentTextBrush", "AccentSoftBrush")
         };
 
-        IconeDialogo.Data = (Geometry)FindResource(chaveIcone);
-        IconeDialogo.Stroke = (Brush)FindResource(chaveCor);
-        FundoIcone.Background = (Brush)FindResource(chaveFundo);
+        if (this.FindResource(chaveIcone) is Geometry geometria) IconeDialogo.Data = geometria;
+        if (this.FindResource(chaveCor) is IBrush cor) IconeDialogo.Stroke = cor;
+        if (this.FindResource(chaveFundo) is IBrush fundo) FundoIcone.Background = fundo;
     }
 }

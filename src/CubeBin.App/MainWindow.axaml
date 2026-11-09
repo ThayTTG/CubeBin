@@ -1,0 +1,761 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="using:NokyLabs.UI"
+        xmlns:local="using:CubeBin.App"
+        x:Class="CubeBin.App.MainWindow"
+        Title="CubeBin" Height="720" Width="1140" MinHeight="620" MinWidth="920"
+        Icon="/app.ico" WindowStartupLocation="CenterScreen">
+  <!--
+    Visual no padrão da NokyLabs (Kit em lib/NokyLabs.UI, cor vermelha do CubeBin). Estrutura de
+    cada tela: título da página + uma linha de descrição + conteúdo em cartões. A lógica é a mesma
+    da versão 1 (WPF), em MainWindow.axaml.cs; o que mudou foi só o motor da tela.
+  -->
+
+  <Grid x:Name="GradeJanela" ColumnDefinitions="248,*" RowDefinitions="*,Auto">
+
+    <!-- ===================== Menu lateral (recolhível) ===================== -->
+    <Border Grid.RowSpan="2" Background="{DynamicResource SidebarBrush}"
+            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+      <DockPanel x:Name="PainelSidebar" Margin="14,20,14,14">
+        <!-- Cabeçalho do app -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="6,0,0,26">
+          <Border Width="42" Height="42" CornerRadius="13" Background="{DynamicResource AccentBrush}">
+            <Viewbox Width="22" Height="22">
+              <Path Classes="icon" Data="{StaticResource IconeCubo}" Stroke="{DynamicResource OnAccentBrush}" />
+            </Viewbox>
+          </Border>
+          <StackPanel x:Name="PainelNomeApp" VerticalAlignment="Center" Spacing="1">
+            <TextBlock Text="CubeBin" FontSize="18" FontWeight="Bold" />
+            <TextBlock Text="NokyLabs" Classes="muted" />
+          </StackPanel>
+        </StackPanel>
+
+        <!-- Rodapé: créditos/versão e o botão de recolher -->
+        <StackPanel DockPanel.Dock="Bottom" Spacing="10">
+          <ui:CreditsCard x:Name="CardVersao" AppName="CubeBin" />
+          <Button x:Name="BotaoRecolherSidebar" Classes="ghost" HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Left" Padding="12,9" ToolTip.Tip="Recolher menu">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <Viewbox Width="18" Height="18">
+                <Path x:Name="IconeRecolher" Classes="icon" Data="{StaticResource IconePainelFechar}" />
+              </Viewbox>
+              <TextBlock x:Name="TxtRecolherMenu" Text="Recolher menu" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="3">
+            <TextBlock x:Name="TxtTituloMenu" Text="MENU" Classes="caps" Margin="12,0,0,8" />
+            <RadioButton x:Name="NavOrganizar" Classes="nav" GroupName="nav" Tag="organizar" IsChecked="True" ToolTip.Tip="Organizar">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconePasta}" /></Viewbox>
+                <TextBlock x:Name="TxtLabelOrganizar" Text="Organizar" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton x:Name="NavLimpar" Classes="nav" GroupName="nav" Tag="limpar" ToolTip.Tip="Limpar">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeBorracha}" /></Viewbox>
+                <TextBlock x:Name="TxtLabelLimpar" Text="Limpar" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton x:Name="NavDeletar" Classes="nav" GroupName="nav" Tag="deletar" ToolTip.Tip="Deletar">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeLixeira}" /></Viewbox>
+                <TextBlock x:Name="TxtLabelDeletar" Text="Deletar" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton x:Name="NavSugestoes" Classes="nav" GroupName="nav" Tag="sugestoes" ToolTip.Tip="Sugestões">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeLampada}" /></Viewbox>
+                <TextBlock x:Name="TxtLabelSugestoes" Text="Sugestões" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton x:Name="NavCubos" Classes="nav" GroupName="nav" Tag="cubos" ToolTip.Tip="Cubos">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeCubo}" /></Viewbox>
+                <TextBlock x:Name="TxtLabelCubos" Text="Cubos" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton x:Name="NavHistorico" Classes="nav" GroupName="nav" Tag="historico" ToolTip.Tip="Histórico">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeHistorico}" /></Viewbox>
+                <TextBlock x:Name="TxtLabelHistorico" Text="Histórico" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton x:Name="NavConfiguracoes" Classes="nav" GroupName="nav" Tag="configuracoes" ToolTip.Tip="Configurações">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeEngrenagem}" /></Viewbox>
+                <TextBlock x:Name="TxtLabelConfiguracoes" Text="Configurações" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton x:Name="NavLogin" Classes="nav" GroupName="nav" Tag="login" ToolTip.Tip="Login">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeNuvem}" /></Viewbox>
+                <TextBlock x:Name="TxtLabelLogin" Text="Login" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton x:Name="NavSobre" Classes="nav" GroupName="nav" Tag="sobre" ToolTip.Tip="Sobre">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeInfo}" /></Viewbox>
+                <TextBlock x:Name="TxtLabelSobre" Text="Sobre" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <!-- ===================== Páginas ===================== -->
+    <Panel x:Name="PainelPaginas" Grid.Column="1">
+
+      <!-- ────────── ORGANIZAR ────────── -->
+      <DockPanel x:Name="PaginaOrganizar" Margin="32,28,32,24">
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,18">
+          <TextBlock Text="Organizar" Classes="titulo" />
+          <TextBlock Classes="descricao"
+                     Text="Diga para onde vai cada tipo de arquivo. O CubeBin organiza sozinho quando você está longe do computador." />
+        </StackPanel>
+
+        <Border DockPanel.Dock="Top" Classes="segmented" HorizontalAlignment="Left" Margin="0,0,0,16">
+          <StackPanel Orientation="Horizontal">
+            <RadioButton x:Name="SubAbaRegras" Classes="seg" GroupName="subOrganizar" IsChecked="True" Content="Regras de extensão" />
+            <RadioButton x:Name="SubAbaPendencias" Classes="seg" GroupName="subOrganizar" Content="Pendências" />
+          </StackPanel>
+        </Border>
+
+        <Panel>
+          <!-- Regras de extensão -->
+          <DockPanel x:Name="PainelRegras">
+            <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+              <StackPanel Orientation="Horizontal" Margin="0,0,16,8">
+                <TextBlock Text="Editando regras de" VerticalAlignment="Center" Margin="0,0,10,0" Classes="secondary" />
+                <ComboBox x:Name="ComboContextoRegras" Width="200" SelectionChanged="ComboContextoRegras_SelectionChanged" />
+              </StackPanel>
+              <Button x:Name="BtnAdicionarRegra" Classes="soft ic" Content="Nova regra"
+                      Tag="{StaticResource IconeMais}" Margin="0,0,8,8" Click="BtnAdicionarRegra_Click" />
+              <Button x:Name="BtnRemoverRegra" Classes="secondary ic" Content="Remover regra selecionada" Tag="{StaticResource IconeX}"
+                      Margin="0,0,8,8" Click="BtnRemoverRegra_Click" />
+              <Button x:Name="BtnUsarPadrao" Classes="secondary ic" Content="Usar regras padrão nesta pasta" Tag="{StaticResource IconeRestaurar}"
+                      Margin="0,0,8,8" Click="BtnUsarPadrao_Click" />
+            </WrapPanel>
+            <Button DockPanel.Dock="Bottom" x:Name="BtnSalvarRegras" Content="Salvar alterações"
+                    Classes="primary ic" Tag="{StaticResource IconeVisto}"
+                    HorizontalAlignment="Right" Margin="0,16,0,0" Click="BtnSalvarRegras_Click" />
+            <Border Classes="lista">
+              <DataGrid x:Name="GridRegras" AutoGenerateColumns="False" IsReadOnly="False"
+                        ToolTip.Tip="1 clique seleciona · 2 cliques editam o texto · botão direito mostra mais opções">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Chave" Binding="{Binding Chave}" Width="120" />
+                  <DataGridTextColumn Header="Extensões (separadas por vírgula)" Binding="{Binding ExtensoesTexto}" Width="220" />
+                  <DataGridTemplateColumn Header="Tipo" Width="130">
+                    <DataGridTemplateColumn.CellTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding TipoTexto}" VerticalAlignment="Center" Margin="12,0" />
+                      </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                      <DataTemplate>
+                        <ComboBox ItemsSource="{x:Static local:MainWindow.OpcoesTipoDestino}"
+                                  SelectedItem="{Binding TipoTexto, Mode=TwoWay}"
+                                  HorizontalAlignment="Stretch" MinHeight="32" Margin="2" />
+                      </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                  </DataGridTemplateColumn>
+                  <DataGridTextColumn Header="Pasta de destino (Local)" Binding="{Binding Destino}" Width="160" />
+                  <DataGridTextColumn Header="Caminho no Drive (Google Drive)" Binding="{Binding CaminhoDrive}" Width="210" />
+                  <DataGridTextColumn Header="Subpastas configuradas" Binding="{Binding SubpastasResumo}" Width="170" IsReadOnly="True" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Border>
+          </DockPanel>
+
+          <!-- Pendências -->
+          <DockPanel x:Name="PainelPendencias" IsVisible="False">
+            <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+              <Button x:Name="BtnRecarregarPendencias" Classes="secondary ic" Content="Recarregar" Tag="{StaticResource IconeAtualizar}"
+                      Margin="0,0,8,8" Click="BtnRecarregarPendencias_Click" />
+              <Button x:Name="BtnIgnorarPendencia" Classes="secondary ic" Content="Ignorar selecionada" Tag="{StaticResource IconeX}"
+                      Margin="0,0,8,8" Click="BtnIgnorarPendencia_Click" />
+            </WrapPanel>
+            <TextBlock DockPanel.Dock="Top" Classes="pequeno" Margin="0,0,0,12"
+                       Text="Arquivos com extensão sem regra ficam aqui. Dê dois cliques num deles para escolher para onde ele vai." />
+            <Border Classes="lista">
+              <DataGrid x:Name="GridPendencias" AutoGenerateColumns="False" IsReadOnly="True"
+                        ToolTip.Tip="Dois cliques para escolher em qual pasta/regra existente organizar este arquivo">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Arquivo" Binding="{Binding NomeArquivo}" Width="220" />
+                  <DataGridTextColumn Header="Extensão" Binding="{Binding Extensao}" Width="100" />
+                  <DataGridTextColumn Header="Pasta de origem" Binding="{Binding PastaOrigemId}" Width="150" />
+                  <DataGridTextColumn Header="Detectado em" Binding="{Binding DataDeteccao}" Width="170" />
+                  <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="110" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Border>
+          </DockPanel>
+        </Panel>
+      </DockPanel>
+
+      <!-- ────────── LIMPAR ────────── -->
+      <DockPanel x:Name="PaginaLimpar" Margin="32,28,32,24" IsVisible="False">
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,18">
+          <TextBlock Text="Limpar" Classes="titulo" />
+          <TextBlock Classes="descricao"
+                     Text="As pastas que o CubeBin acompanha. As pastas do Windows podem ser limpas e restauradas, mas nunca apagadas; as suas podem ser criadas e removidas à vontade." />
+        </StackPanel>
+        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+          <Button x:Name="BtnAdicionarPasta" Classes="soft ic" Content="Adicionar pasta personalizada"
+                  Tag="{StaticResource IconePastaMais}" Margin="0,0,8,8" Click="BtnAdicionarPasta_Click" />
+          <Button x:Name="BtnRemoverPasta" Classes="secondary ic" Content="Remover pasta selecionada" Tag="{StaticResource IconeX}"
+                  Margin="0,0,8,8" Click="BtnRemoverPasta_Click" />
+          <Button x:Name="BtnLimparPastaPadrao" Classes="secondary ic" Content="Limpar pasta padrão" Tag="{StaticResource IconeBorracha}"
+                  Margin="0,0,8,8" Click="BtnLimparPastaPadrao_Click" />
+          <Button x:Name="BtnRestaurarPastaPadrao" Classes="secondary ic" Content="Restaurar pasta padrão" Tag="{StaticResource IconeRestaurar}"
+                  Margin="0,0,8,8" Click="BtnRestaurarPastaPadrao_Click" />
+        </WrapPanel>
+        <Button DockPanel.Dock="Bottom" x:Name="BtnSalvarPastas" Content="Salvar alterações"
+                Classes="primary ic" Tag="{StaticResource IconeVisto}"
+                HorizontalAlignment="Right" Margin="0,16,0,0" Click="BtnSalvarPastas_Click" />
+        <Border Classes="lista">
+          <DataGrid x:Name="GridPastas" AutoGenerateColumns="False" IsReadOnly="False">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Nome" Binding="{Binding Nome}" Width="170" IsReadOnly="True" />
+              <DataGridTextColumn Header="Caminho" Binding="{Binding Caminho}" Width="*" IsReadOnly="True" />
+              <DataGridCheckBoxColumn Header="Organizar subpastas" Binding="{Binding OrganizarSubpastas}" Width="160" />
+              <DataGridTextColumn Header="Tipo" Binding="{Binding TipoExibicao}" Width="120" IsReadOnly="True" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </Border>
+      </DockPanel>
+
+      <!-- ────────── DELETAR ────────── -->
+      <DockPanel x:Name="PaginaDeletar" Margin="32,28,32,24" IsVisible="False">
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,18">
+          <TextBlock Text="Deletar" Classes="titulo" />
+          <TextBlock Classes="descricao"
+                     Text="Escolha arquivos ou pastas de qualquer lugar do computador para apagar de vez. Antes, o CubeBin guarda um registro em CSV do que foi apagado." />
+        </StackPanel>
+        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+          <Button x:Name="BtnDeletarAdicionarArquivos" Classes="soft ic" Content="Selecionar arquivos..."
+                  Tag="{StaticResource IconeArquivoMais}" Margin="0,0,8,8" Click="BtnDeletarAdicionarArquivos_Click" />
+          <Button x:Name="BtnDeletarAdicionarPasta" Classes="secondary ic" Content="Selecionar pasta..." Tag="{StaticResource IconePastaMais}"
+                  Margin="0,0,8,8" Click="BtnDeletarAdicionarPasta_Click" />
+          <Button x:Name="BtnDeletarRemoverDaLista" Classes="secondary ic" Content="Remover da lista" Tag="{StaticResource IconeX}"
+                  Margin="0,0,8,8" Click="BtnDeletarRemoverDaLista_Click" />
+        </WrapPanel>
+
+        <!-- Aviso de ação irreversível + ações. A destrutiva fica por último, à direita. -->
+        <Border DockPanel.Dock="Bottom" Classes="aviso" Margin="0,16,0,0">
+          <Grid RowDefinitions="Auto,Auto">
+            <DockPanel>
+              <Viewbox DockPanel.Dock="Left" Width="20" Height="20" VerticalAlignment="Top" Margin="0,1,12,0">
+                <Path Classes="icon" Stroke="{DynamicResource WarningBrush}" Data="{StaticResource IconeAlerta}" />
+              </Viewbox>
+              <StackPanel>
+                <TextBlock x:Name="TxtResumoDeletar" Text="Nenhum item selecionado." TextWrapping="Wrap"
+                           FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" />
+                <TextBlock Classes="secondary" Margin="0,4,0,0"
+                           Text="O que for apagado aqui não volta pelo Histórico. Para guardar uma cópia antes, use “Enviar à nuvem e excluir”." />
+              </StackPanel>
+            </DockPanel>
+            <WrapPanel Grid.Row="1" HorizontalAlignment="Right" Margin="0,4,0,0">
+              <Button x:Name="BtnDeletarEnviarNuvem" Classes="soft ic" Content="Enviar à nuvem e excluir"
+                      Tag="{StaticResource IconeEnviarNuvem}" IsEnabled="False" Margin="8,8,0,0" Click="BtnDeletarEnviarNuvem_Click" />
+              <Button x:Name="BtnExcluirDefinitivamente" Classes="danger ic" Content="Excluir definitivamente"
+                      Tag="{StaticResource IconeLixeira}" IsEnabled="False" Margin="8,8,0,0" Click="BtnExcluirDefinitivamente_Click" />
+            </WrapPanel>
+          </Grid>
+        </Border>
+
+        <Panel>
+          <Border Classes="lista" IsVisible="{Binding #GridDeletar.IsVisible}">
+            <DataGrid x:Name="GridDeletar" AutoGenerateColumns="False" IsReadOnly="True">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Nome" Binding="{Binding Nome}" Width="240" />
+                <DataGridTextColumn Header="Caminho" Binding="{Binding Caminho}" Width="*" />
+                <DataGridTextColumn Header="Tipo" Binding="{Binding Tipo}" Width="100" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </Border>
+
+          <!-- Estado vazio: zona de arraste de verdade, com borda tracejada -->
+          <Panel x:Name="PainelVazioDeletar" IsVisible="False" DragDrop.AllowDrop="True" Background="Transparent">
+            <Rectangle x:Name="RetanguloTracejadoDeletar" Stroke="{StaticResource BorderStrongBrush}" StrokeThickness="2"
+                       StrokeDashArray="5,4" RadiusX="16" RadiusY="16" Fill="{DynamicResource SurfaceBrush}" />
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" Margin="24">
+              <Viewbox Width="56" Height="56" HorizontalAlignment="Center">
+                <Path Classes="icon" Stroke="{StaticResource IlustracaoTracoBrush}"
+                      StrokeThickness="1.5" Data="{StaticResource IlustracaoPastaEntrada}" />
+              </Viewbox>
+              <TextBlock Text="Arraste arquivos aqui" Classes="h3" HorizontalAlignment="Center" Margin="0,16,0,4" />
+              <TextBlock Text="Ou use os botões acima para selecionar arquivos e pastas."
+                         Classes="secondary" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="300" />
+            </StackPanel>
+          </Panel>
+        </Panel>
+      </DockPanel>
+
+      <!-- ────────── SUGESTÕES (agente opcional, desativado por padrão) ────────── -->
+      <DockPanel x:Name="PaginaSugestoes" Margin="32,28,32,24" IsVisible="False">
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,18">
+          <TextBlock Text="Sugestões" Classes="titulo" />
+          <TextBlock Classes="descricao"
+                     Text="O agente procura arquivos duplicados, temporários antigos e arquivos grandes parados. Tudo roda no seu computador, sem internet, e nada é apagado sem a sua aprovação." />
+        </StackPanel>
+
+        <!-- Configuração do agente -->
+        <Border DockPanel.Dock="Top" Classes="card" Margin="0,0,0,16">
+          <StackPanel>
+            <DockPanel>
+              <CheckBox x:Name="ChkAgenteAtivo" DockPanel.Dock="Right" Content="Agente ativo" VerticalAlignment="Center" />
+              <StackPanel>
+                <TextBlock Text="Agente de sugestões" Classes="h3" />
+                <TextBlock Classes="pequeno" Margin="0,2,0,0"
+                           Text="Vem desligado. Quando ligado, analisa as pastas acompanhadas só quando você está longe do computador." />
+              </StackPanel>
+            </DockPanel>
+            <Grid ColumnDefinitions="*,16,*,16,*,16,*,16,Auto">
+              <StackPanel Grid.Column="0" VerticalAlignment="Bottom">
+                <TextBlock Text="Temporários sem uso há (dias)" Classes="rotulo" />
+                <TextBox x:Name="TxtAgenteDiasTemporario" Classes="field" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
+                <TextBlock Text="Arquivo grande parado há (dias)" Classes="rotulo" />
+                <TextBox x:Name="TxtAgenteDiasGrande" Classes="field" />
+              </StackPanel>
+              <StackPanel Grid.Column="4" VerticalAlignment="Bottom">
+                <TextBlock Text="“Grande” a partir de (MB)" Classes="rotulo" />
+                <TextBox x:Name="TxtAgenteTamanhoMinimoMb" Classes="field" />
+              </StackPanel>
+              <StackPanel Grid.Column="6" VerticalAlignment="Bottom">
+                <TextBlock Text="Análises por dia" Classes="rotulo" />
+                <TextBox x:Name="TxtAgenteExecucoesPorDia" Classes="field" />
+              </StackPanel>
+              <Button Grid.Column="8" x:Name="BtnSalvarConfigAgente" Classes="secondary ic" Content="Salvar agente" VerticalAlignment="Bottom"
+                      Tag="{StaticResource IconeVisto}" Click="BtnSalvarConfigAgente_Click" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+          <Button x:Name="BtnAnalisarAgora" Classes="primary ic" Content="Analisar agora"
+                  Tag="{StaticResource IconeLampada}" Margin="0,0,8,8" Click="BtnAnalisarAgora_Click" />
+          <Button x:Name="BtnRecarregarSugestoes" Classes="secondary ic" Content="Recarregar" Tag="{StaticResource IconeAtualizar}"
+                  Margin="0,0,16,8" Click="BtnRecarregarSugestoes_Click" />
+          <TextBlock x:Name="TxtResumoSugestoes" Text="Nenhuma sugestão pendente." VerticalAlignment="Center"
+                     Classes="secondary" Margin="0,0,0,8" />
+        </WrapPanel>
+
+        <WrapPanel DockPanel.Dock="Bottom" HorizontalAlignment="Right" Margin="0,8,0,0">
+          <Button x:Name="BtnIgnorarSugestoes" Classes="secondary ic" Content="Ignorar selecionadas" Tag="{StaticResource IconeX}"
+                  Margin="8,8,0,0" Click="BtnIgnorarSugestoes_Click" />
+          <Button x:Name="BtnAprovarSugestoes" Classes="secondary ic" Content="Aprovar selecionadas" Tag="{StaticResource IconeVisto}"
+                  Margin="8,8,0,0" Click="BtnAprovarSugestoes_Click" />
+          <Button x:Name="BtnSugestoesEnviarNuvem" Classes="soft ic" Content="Enviar aprovadas à nuvem"
+                  Tag="{StaticResource IconeEnviarNuvem}" IsEnabled="False" Margin="8,8,0,0" Click="BtnSugestoesEnviarNuvem_Click" />
+          <Button x:Name="BtnExcluirAprovadas" Classes="danger ic" Content="Excluir arquivos aprovados"
+                  Tag="{StaticResource IconeLixeira}" IsEnabled="False" Margin="8,8,0,0" Click="BtnExcluirAprovadas_Click" />
+        </WrapPanel>
+
+        <Panel MinHeight="160">
+          <Border Classes="lista" IsVisible="{Binding #GridSugestoes.IsVisible}">
+            <DataGrid x:Name="GridSugestoes" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Arquivo" Binding="{Binding Nome}" Width="210" />
+                <DataGridTextColumn Header="Tipo" Binding="{Binding TipoTexto}" Width="160" />
+                <DataGridTextColumn Header="Motivo" Binding="{Binding Motivo}" Width="*" />
+                <DataGridTextColumn Header="Tamanho" Binding="{Binding TamanhoTexto}" Width="100" />
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </Border>
+
+          <!-- Estado vazio: pilha de 3 cubos neutros (ilustração de sistema, não um Cubo de verdade) -->
+          <StackPanel x:Name="PainelVazioSugestoes" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Viewbox Width="108" Height="96" HorizontalAlignment="Center">
+              <Canvas Width="108" Height="98">
+                <Canvas Canvas.Left="0" Canvas.Top="38" Width="64" Height="64">
+                  <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceClaraBrush}" Data="{StaticResource CuboFaceTopo}" />
+                  <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceBrush}" Data="{StaticResource CuboFaceEsquerda}" />
+                  <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceEscuraBrush}" Data="{StaticResource CuboFaceDireita}" />
+                </Canvas>
+                <Canvas Canvas.Left="44" Canvas.Top="38" Width="64" Height="64">
+                  <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceClaraBrush}" Data="{StaticResource CuboFaceTopo}" />
+                  <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceBrush}" Data="{StaticResource CuboFaceEsquerda}" />
+                  <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceEscuraBrush}" Data="{StaticResource CuboFaceDireita}" />
+                </Canvas>
+                <Canvas Canvas.Left="22" Canvas.Top="0" Width="64" Height="64">
+                  <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceClaraBrush}" Data="{StaticResource CuboFaceTopo}" />
+                  <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceBrush}" Data="{StaticResource CuboFaceEsquerda}" />
+                  <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceEscuraBrush}" Data="{StaticResource CuboFaceDireita}" />
+                </Canvas>
+              </Canvas>
+            </Viewbox>
+            <TextBlock Text="Tudo limpo por aqui" Classes="h3" HorizontalAlignment="Center" Margin="0,18,0,4" />
+            <TextBlock Text="Assim que o agente encontrar algo, as sugestões aparecem empilhadas bem aqui."
+                       Classes="secondary" HorizontalAlignment="Center" TextAlignment="Center"
+                       MaxWidth="300" Margin="0,0,0,16" />
+            <Button x:Name="BtnAnalisarAgoraVazio" Classes="primary ic" Content="Analisar agora"
+                    Tag="{StaticResource IconeLampada}" HorizontalAlignment="Center" Click="BtnAnalisarAgora_Click" />
+          </StackPanel>
+        </Panel>
+      </DockPanel>
+
+      <!-- ────────── CUBOS (pacotes de backup na nuvem) ────────── -->
+      <DockPanel x:Name="PaginaCubos" Margin="32,28,32,24" IsVisible="False">
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,18">
+          <TextBlock Text="Cubos" Classes="titulo" />
+          <TextBlock Classes="descricao"
+                     Text="Cada cubo é um pacote de backup enviado ao Google Drive. Quanto maior o pacote, mais sólido o cubo. Passe o mouse para ver o que tem dentro e clique para ver os detalhes ou restaurar." />
+        </StackPanel>
+        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+          <Button x:Name="BtnRecarregarCubos" Classes="secondary ic" Content="Recarregar" Tag="{StaticResource IconeAtualizar}"
+                  Margin="0,0,8,8" Click="BtnRecarregarCubos_Click" />
+        </WrapPanel>
+
+        <Panel>
+          <ScrollViewer x:Name="ScrollCubos" VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="ListaCubos">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="cubo" Width="200" Margin="0,0,16,16" ToolTip.Tip="{Binding ResumoCategorias}">
+                    <StackPanel>
+                      <Viewbox Width="72" Height="72" HorizontalAlignment="Center" Margin="0,0,0,14"
+                               Opacity="{Binding OpacidadeCubo}">
+                        <Canvas Width="64" Height="64">
+                          <Path Fill="{StaticResource CuboTopoBrush}" Stroke="{StaticResource CuboTracoBrush}" StrokeThickness="1.5"
+                                StrokeJoin="Round" Data="{StaticResource CuboFaceTopo}" />
+                          <Path Fill="{StaticResource CuboEsquerdaBrush}" Stroke="{StaticResource CuboTracoBrush}" StrokeThickness="1.5"
+                                StrokeJoin="Round" Data="{StaticResource CuboFaceEsquerda}" />
+                          <Path Fill="{StaticResource CuboDireitaBrush}" Stroke="{StaticResource CuboTracoBrush}" StrokeThickness="1.5"
+                                StrokeJoin="Round" Data="{StaticResource CuboFaceDireita}" />
+                        </Canvas>
+                      </Viewbox>
+                      <TextBlock Text="{Binding NomeArquivoZip}" FontSize="13" FontWeight="SemiBold"
+                                 TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextBrush}" />
+                      <TextBlock Text="{Binding DataTexto}" Classes="pequeno" Margin="0,4,0,0" />
+                      <TextBlock Text="{Binding DetalheTexto}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <!-- Estado vazio: um cubo neutro "flutuando", com a sombra no chão -->
+          <StackPanel x:Name="PainelVazioCubos" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Viewbox Width="80" Height="80" HorizontalAlignment="Center" Opacity="0.55">
+              <Canvas Width="64" Height="64">
+                <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceClaraBrush}" Data="{StaticResource CuboFaceTopo}" />
+                <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceBrush}" Data="{StaticResource CuboFaceEsquerda}" />
+                <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceEscuraBrush}" Data="{StaticResource CuboFaceDireita}" />
+              </Canvas>
+            </Viewbox>
+            <Ellipse Width="56" Height="8" Fill="{DynamicResource SurfaceRaisedBrush}" Margin="0,10,0,0" HorizontalAlignment="Center" />
+            <TextBlock Text="Nenhum cubo ainda" Classes="h3" HorizontalAlignment="Center" Margin="0,18,0,4" />
+            <TextBlock Text="Seu primeiro backup enviado aparece flutuando bem aqui."
+                       Classes="secondary" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="300" />
+          </StackPanel>
+        </Panel>
+      </DockPanel>
+
+      <!-- ────────── HISTÓRICO (absorve o Recall) ────────── -->
+      <DockPanel x:Name="PaginaHistorico" Margin="32,28,32,24" IsVisible="False">
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,18">
+          <TextBlock Text="Histórico" Classes="titulo" />
+          <TextBlock Classes="descricao"
+                     Text="Cada execução gera um registro em CSV. Escolha um e clique em “Ver itens desta execução” para revisar (e, se precisar, devolver) os arquivos movidos nela." />
+        </StackPanel>
+
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="2*" MinHeight="150" />
+            <RowDefinition Height="16" />
+            <RowDefinition Height="3*" MinHeight="200" />
+          </Grid.RowDefinitions>
+
+          <!-- Registros em CSV -->
+          <Border Grid.Row="0" Classes="card" Padding="16">
+            <DockPanel>
+              <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                <WrapPanel DockPanel.Dock="Right">
+                  <Button x:Name="BtnVerItensExecucao" Classes="soft ic" Content="Ver itens desta execução"
+                          Tag="{StaticResource IconeLista}" Margin="8,0,0,8" Click="BtnVerItensExecucao_Click" />
+                  <Button x:Name="BtnLimparFiltroRecall" Classes="secondary ic" Content="Mostrar tudo" Margin="8,0,0,8" Click="BtnLimparFiltroRecall_Click" />
+                  <Button x:Name="BtnRecarregarHistorico" Classes="secondary ic" Content="Recarregar" Tag="{StaticResource IconeAtualizar}"
+                          Margin="8,0,0,8" Click="BtnRecarregarHistorico_Click" />
+                </WrapPanel>
+                <TextBlock Text="Registros de cada execução" Classes="h3" VerticalAlignment="Center" Margin="0,0,0,8" />
+              </DockPanel>
+              <Panel>
+                <DataGrid x:Name="GridHistorico" AutoGenerateColumns="False" IsReadOnly="True"
+                          ToolTip.Tip="Dois cliques para abrir o arquivo de backup">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="Arquivo de backup" Binding="{Binding Nome}" Width="280" />
+                    <DataGridTextColumn Header="Criado em" Binding="{Binding CriadoEm}" Width="180" />
+                    <DataGridTextColumn Header="Tamanho (KB)" Binding="{Binding TamanhoKb}" Width="130" />
+                  </DataGrid.Columns>
+                </DataGrid>
+
+                <!-- Estado vazio: gaveteiro com a gaveta de baixo entreaberta -->
+                <StackPanel x:Name="PainelVazioHistorico" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center">
+                  <Viewbox Width="64" Height="64" HorizontalAlignment="Center">
+                    <Canvas Width="64" Height="64">
+                      <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceBrush}" Data="{StaticResource GaveteiroCorpo}" />
+                      <Path Stroke="{StaticResource IlustracaoTracoBrush}" StrokeThickness="1.5" StrokeJoin="Round" Fill="{StaticResource IlustracaoFaceClaraBrush}" Data="{StaticResource GaveteiroGaveta}" />
+                    </Canvas>
+                  </Viewbox>
+                  <TextBlock Text="Nada guardado ainda" Classes="h3" HorizontalAlignment="Center" Margin="0,14,0,4" />
+                  <TextBlock Text="Cada backup em CSV que o app gerar fica registrado aqui."
+                             Classes="secondary" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="300" />
+                </StackPanel>
+              </Panel>
+            </DockPanel>
+          </Border>
+
+          <GridSplitter Grid.Row="1" ResizeDirection="Rows" />
+
+          <!-- Arquivos movidos (Recall): mesma lógica de antes, agora dentro do Histórico -->
+          <Border Grid.Row="2" Classes="card" Padding="16">
+            <DockPanel>
+              <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                <Button x:Name="BtnRecarregarRecall" DockPanel.Dock="Right" Classes="secondary ic" Content="Recarregar" Tag="{StaticResource IconeAtualizar}"
+                        Margin="8,0,0,8" Click="BtnRecarregarRecall_Click" />
+                <TextBlock Text="Arquivos movidos" Classes="h3" VerticalAlignment="Center" Margin="0,0,0,8" />
+              </DockPanel>
+
+              <!-- Legenda: cada estado com o nome escrito, nunca só a cor -->
+              <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                <Border Classes="pilula" Background="{StaticResource RecallAtivoBrush}" Margin="0,0,8,4">
+                  <TextBlock Text="Organizado" FontSize="12" Foreground="{DynamicResource AccentTextBrush}" />
+                </Border>
+                <Border Classes="pilula" Background="{StaticResource RecallPendenteBrush}" Margin="0,0,8,4">
+                  <TextBlock Text="Será devolvido ao salvar" FontSize="12" Foreground="{DynamicResource WarningBrush}" />
+                </Border>
+                <Border Classes="pilula" Background="{StaticResource RecallRestauradoBrush}" Margin="0,0,8,4">
+                  <TextBlock Text="Devolvido ao local de origem" FontSize="12" Foreground="{DynamicResource SuccessBrush}" />
+                </Border>
+              </WrapPanel>
+
+              <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,12,0,0">
+                <Button x:Name="BtnCancelarRecall" Classes="secondary" Content="Cancelar" IsEnabled="False" Click="BtnCancelarRecall_Click" />
+                <Button x:Name="BtnDesfazerRecall" Classes="secondary ic" Content="Desfazer" Tag="{StaticResource IconeDesfazer}"
+                        IsEnabled="False" Click="BtnDesfazerRecall_Click" />
+                <Button x:Name="BtnSalvarRecall" Classes="primary ic" Content="Salvar" Tag="{StaticResource IconeVisto}"
+                        IsEnabled="False" Click="BtnSalvarRecall_Click" />
+              </StackPanel>
+
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="220" MinWidth="140" />
+                  <ColumnDefinition Width="13" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <TreeView x:Name="TreeRecall" Grid.Column="0" SelectionChanged="TreeRecall_SelectionChanged" />
+
+                <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+
+                <DataGrid x:Name="GridRecall" Grid.Column="2" AutoGenerateColumns="False" IsReadOnly="True"
+                          SelectionMode="Extended"
+                          ToolTip.Tip="Ctrl/Shift + clique para selecionar vários; botão direito marca ou desmarca a devolução">
+                  <DataGrid.Styles>
+                    <!-- A cor de cada linha mostra a situação (e a coluna "Situação" a escreve). -->
+                    <Style Selector="DataGridRow">
+                      <Setter Property="Background" Value="{Binding CorLinha, Converter={x:Static local:CoresRecall.Fundo}}" />
+                      <Setter Property="Foreground" Value="{Binding CorLinha, Converter={x:Static local:CoresRecall.Texto}}" />
+                    </Style>
+                  </DataGrid.Styles>
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="Situação" Binding="{Binding SituacaoTexto}" Width="130" />
+                    <DataGridTextColumn Header="Arquivo" Binding="{Binding NomeArquivo}" Width="180" />
+                    <DataGridTextColumn Header="Local original" Binding="{Binding CaminhoOrigem}" Width="220" />
+                    <DataGridTextColumn Header="Local atual" Binding="{Binding CaminhoAtual}" Width="220" />
+                    <DataGridTextColumn Header="Movido em" Binding="{Binding MovidoEm}" Width="150" />
+                  </DataGrid.Columns>
+                </DataGrid>
+              </Grid>
+            </DockPanel>
+          </Border>
+        </Grid>
+      </DockPanel>
+
+      <!-- ────────── CONFIGURAÇÕES ────────── -->
+      <ScrollViewer x:Name="PaginaConfiguracoes" VerticalScrollBarVisibility="Auto" IsVisible="False">
+        <StackPanel Margin="32,28,32,24">
+          <TextBlock Text="Configurações" Classes="titulo" />
+          <TextBlock Classes="descricao" Margin="0,6,0,20"
+                     Text="Quando e como o CubeBin organiza os seus arquivos." />
+
+          <Grid ColumnDefinitions="*,16,*">
+            <Border Grid.Column="0" Classes="card">
+              <StackPanel>
+                <TextBlock Text="Agendamento" Classes="h3" />
+
+                <TextBlock Text="Quantas vezes por dia organizar" Classes="rotulo" />
+                <TextBox x:Name="TxtExecucoesPorDia" Classes="field" />
+                <TextBlock Classes="pequeno" Margin="0,6,0,0"
+                           Text="As execuções são espaçadas em 24h ÷ esse número, a partir do horário de início abaixo." />
+
+                <TextBlock Text="Horário de início (HH:mm)" Classes="rotulo" />
+                <TextBox x:Name="TxtHorarioInicio" Classes="field" />
+
+                <TextBlock Text="Tempo longe do computador para começar (minutos)" Classes="rotulo" />
+                <TextBox x:Name="TxtTempoAusencia" Classes="field" />
+
+                <TextBlock Text="Tempo para cancelar pela notificação (segundos)" Classes="rotulo" />
+                <TextBox x:Name="TxtJanelaCancelamento" Classes="field" />
+              </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Classes="card">
+              <StackPanel>
+                <TextBlock Text="Pastas e inicialização" Classes="h3" />
+
+                <TextBlock Text="Pasta temporária" Classes="rotulo" />
+                <TextBox x:Name="TxtDiretorioTemporario" Classes="field" />
+
+                <TextBlock Text="Pasta dos backups (CSV)" Classes="rotulo" />
+                <TextBox x:Name="TxtDiretorioBackup" Classes="field" />
+
+                <TextBlock Text="Quantos backups manter" Classes="rotulo" />
+                <TextBox x:Name="TxtManterUltimosN" Classes="field" />
+
+                <CheckBox x:Name="ChkIniciarComWindows" Content="Abrir o CubeBin junto com o Windows" Margin="0,20,0,0" />
+              </StackPanel>
+            </Border>
+          </Grid>
+
+          <Button x:Name="BtnSalvarConfigGerais" Content="Salvar configurações" Classes="primary ic"
+                  Tag="{StaticResource IconeVisto}" Margin="0,16,0,0" HorizontalAlignment="Right" Click="BtnSalvarConfigGerais_Click" />
+
+          <Border Classes="card" Margin="0,24,0,0">
+            <DockPanel>
+              <Button x:Name="BtnExecutarAgora" DockPanel.Dock="Right" Content="Executar organização agora"
+                      Classes="soft ic" Tag="{StaticResource IconePlay}"
+                      VerticalAlignment="Center" Margin="16,0,0,0" Click="BtnExecutarAgora_Click" />
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Organizar agora" Classes="h3" />
+                <TextBlock Classes="secondary" Margin="0,4,0,0"
+                           Text="Roda a organização na hora, sem esperar o próximo horário agendado." />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- ────────── LOGIN (Google Drive) ────────── -->
+      <ScrollViewer x:Name="PaginaLogin" VerticalScrollBarVisibility="Auto" IsVisible="False">
+        <StackPanel Margin="32,28,32,24">
+          <TextBlock Text="Login" Classes="titulo" />
+          <TextBlock Classes="descricao" Margin="0,6,0,20"
+                     Text="Conecte uma conta do Google Drive para guardar backups na nuvem. O login acontece no navegador: o CubeBin nunca vê a sua senha." />
+
+          <Border Classes="card" MaxWidth="620" HorizontalAlignment="Left">
+            <DockPanel>
+              <Border DockPanel.Dock="Left" Width="72" Height="72" CornerRadius="16"
+                      Background="{DynamicResource SurfaceRaisedBrush}" VerticalAlignment="Top" Margin="0,0,20,0">
+                <Viewbox Width="40" Height="40">
+                  <Path Classes="icon" Stroke="{DynamicResource TextSecondaryBrush}"
+                        StrokeThickness="1.6" Data="{StaticResource IconeNuvem}" />
+                </Viewbox>
+              </Border>
+              <StackPanel>
+                <TextBlock Text="Google Drive" Classes="h3" />
+                <TextBlock x:Name="TxtLoginStatus" Text="Não conectado" Classes="secondary" Margin="0,4,0,0" />
+
+                <!-- Pílula de conta conectada: substitui o "Não conectado" quando o login dá certo -->
+                <Border x:Name="ChipContaConectada" IsVisible="False" Classes="pilula"
+                        Background="{DynamicResource SuccessSoftBrush}" Padding="12,5" Margin="0,8,0,0" HorizontalAlignment="Left">
+                  <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="8" Height="8" Fill="{DynamicResource SuccessBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBlock x:Name="TxtChipEmail" Text="" VerticalAlignment="Center" FontSize="13" Foreground="{DynamicResource TextBrush}" />
+                  </StackPanel>
+                </Border>
+
+                <TextBlock x:Name="TxtLoginArmazenamento" Text="" Classes="secondary" Margin="0,8,0,0" />
+                <Button x:Name="BtnLoginConectar" Content="Conectar ao Google Drive" Classes="primary ic"
+                        Tag="{StaticResource IconeNuvem}" HorizontalAlignment="Left" Margin="0,16,0,0" Click="BtnConectarGoogleDrive_Click" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- ────────── SOBRE (igual em todos os apps da NokyLabs) ────────── -->
+      <ScrollViewer x:Name="PaginaSobre" VerticalScrollBarVisibility="Auto" IsVisible="False">
+        <StackPanel Margin="32,28,32,24" Spacing="16">
+          <TextBlock Text="Sobre" Classes="titulo" Margin="0,0,0,4" />
+
+          <Border Classes="card" MaxWidth="660" HorizontalAlignment="Left" Padding="24">
+            <StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <Border Width="64" Height="64" CornerRadius="20" Background="{DynamicResource AccentBrush}">
+                  <Viewbox Width="34" Height="34">
+                    <Path Classes="icon" Data="{StaticResource IconeCubo}" Stroke="{DynamicResource OnAccentBrush}" StrokeThickness="2.2" />
+                  </Viewbox>
+                </Border>
+                <StackPanel Margin="18,0,0,0" VerticalAlignment="Center">
+                  <TextBlock Text="CubeBin" FontSize="24" FontWeight="Bold" />
+                  <TextBlock x:Name="TxtVersaoSobre" Text="Versão" Classes="secondary" Margin="0,2,0,0" />
+                  <TextBlock Text="Parte da NokyLabs" Classes="pequeno" Margin="0,2,0,0" />
+                </StackPanel>
+              </StackPanel>
+
+              <TextBlock Classes="secondary" FontSize="14" Margin="0,20,0,0"
+                         Text="Organiza, limpa e faz backup dos seus arquivos, com cuidado para nada se perder no caminho." />
+
+              <WrapPanel Margin="0,20,0,0">
+                <Button x:Name="BtnSobreSite" Content="Site do app" Classes="soft ic"
+                        Tag="{StaticResource IconeLinkExterno}" Margin="0,0,8,8" Click="BtnSobreSite_Click" />
+                <Button x:Name="BtnSobreGithub" Content="Código no GitHub" Classes="secondary ic" Tag="{StaticResource IconeCodigo}"
+                        Margin="0,0,8,8" Click="BtnSobreGithub_Click" />
+                <Button x:Name="BtnSobreProblema" Content="Reportar um problema" Classes="secondary ic" Tag="{StaticResource IconeAlerta}"
+                        Margin="0,0,8,8" Click="BtnSobreProblema_Click" />
+              </WrapPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Quem fez -->
+          <Border Classes="card" MaxWidth="660" HorizontalAlignment="Left" Padding="24"
+                  Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBrush}">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="caps" Text="QUEM FEZ" />
+              <TextBlock TextWrapping="Wrap" FontSize="14.5">
+                <Run Text="Idealizado, testado e aprovado por " /><Run Text="Thayna Dias" FontWeight="Bold" /><Run Text=" (Noky), da NokyLabs." />
+              </TextBlock>
+              <TextBlock TextWrapping="Wrap" FontSize="14.5">
+                <Run Text="Desenvolvido com o auxílio total do " /><Run Text="Claude" FontWeight="Bold" /><Run Text=", a inteligência artificial da Anthropic: o código, a interface e esta tela foram escritos em parceria com ele, a partir das ideias e das decisões da Thayna." />
+              </TextBlock>
+            </StackPanel>
+          </Border>
+
+          <!-- Feito com -->
+          <Border Classes="card" MaxWidth="660" HorizontalAlignment="Left" Padding="24">
+            <StackPanel Spacing="8">
+              <TextBlock Classes="caps" Text="FEITO COM" />
+              <TextBlock Classes="secondary"
+                         Text="Avalonia UI (a tela) · Google APIs para .NET (o backup no Google Drive) · Windows Community Toolkit (as notificações) · fonte Inter, de Rasmus Andersson. Todos livres, com o crédito às suas comunidades." />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Panel>
+
+    <!-- ===================== Aviso de execução em andamento (organização ou envio para a nuvem) ===================== -->
+    <Border x:Name="PainelStatus" Grid.Row="1" Grid.Column="1" IsVisible="False"
+            Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentSoftHoverBrush}"
+            BorderThickness="0,1,0,0" Padding="20,10">
+      <StackPanel Orientation="Horizontal">
+        <ProgressBar IsIndeterminate="True" Width="160" Margin="0,0,14,0" VerticalAlignment="Center" Classes="slim" />
+        <TextBlock x:Name="TxtStatusOrganizando" Text="Organizando arquivos..." VerticalAlignment="Center"
+                   FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextBrush}" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>

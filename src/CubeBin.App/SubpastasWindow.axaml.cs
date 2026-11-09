@@ -1,17 +1,25 @@
-using System.Windows;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
 
 namespace CubeBin.App;
 
 /// <summary>
 /// Diálogo para configurar, por extensão, uma subpasta dentro da pasta de destino da regra
 /// (item 1 do feedback de uso — ex.: Compactados\WinRAR).
+/// Abra com <c>await janela.ShowDialog&lt;bool&gt;(dona)</c>: devolve true quando o usuário salva.
 /// </summary>
 public partial class SubpastasWindow : Window
 {
     /// <summary>Preenchido com o resultado (extensão -> subpasta, só entradas não vazias) quando o usuário clica OK.</summary>
     public Dictionary<string, string> Resultado { get; private set; } = new();
 
-    private readonly List<ExtensaoSubpastaItem> _itens;
+    private readonly List<ExtensaoSubpastaItem> _itens = new();
+
+    public SubpastasWindow()
+    {
+        // Só para o previewer do Avalonia.
+        InitializeComponent();
+    }
 
     public SubpastasWindow(IEnumerable<string> extensoes, IReadOnlyDictionary<string, string> subpastasAtuais)
     {
@@ -29,18 +37,21 @@ public partial class SubpastasWindow : Window
         GridExtensoes.ItemsSource = _itens;
     }
 
-    private void BtnOk_Click(object sender, RoutedEventArgs e)
+    private void BtnOk_Click(object? sender, RoutedEventArgs e)
     {
+        // Confirma uma célula que ainda esteja sendo editada antes de ler os valores.
+        GridExtensoes.CommitEdit(DataGridEditingUnit.Row, exitEditingMode: true);
+
         Resultado = _itens
             .Where(i => !string.IsNullOrWhiteSpace(i.Subpasta))
             .ToDictionary(i => i.Extensao, i => i.Subpasta.Trim());
 
-        DialogResult = true;
+        Close(true);
     }
 
-    private void BtnCancelar_Click(object sender, RoutedEventArgs e)
+    private void BtnCancelar_Click(object? sender, RoutedEventArgs e)
     {
-        DialogResult = false;
+        Close(false);
     }
 
     private class ExtensaoSubpastaItem

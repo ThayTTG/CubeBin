@@ -1,0 +1,252 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:NokyLabs.UI"
+             x:Class="CubeBin.App.App"
+             RequestedThemeVariant="Dark">
+
+  <!--
+    O app continua residente na bandeja mesmo com a janela fechada: só encerra pelo "Sair" do
+    menu do ícone (ShutdownMode="OnExplicitShutdown", ligado em Program.cs).
+    Cores, botões e animações vêm do Kit NokyLabs (lib/NokyLabs.UI), no vermelho do CubeBin.
+    Aqui ficam só os ícones e as ilustrações próprias do CubeBin e o visual das tabelas.
+  -->
+
+  <Application.Resources>
+    <!-- ===================== Ícones (grade 24x24, traço 2px, estilo Lucide) ===================== -->
+    <StreamGeometry x:Key="IconePasta">M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z</StreamGeometry>
+    <StreamGeometry x:Key="IconeBorracha">M7 21l-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21 M22 21H7 M5 11l9 9</StreamGeometry>
+    <StreamGeometry x:Key="IconeLixeira">M3 6h18 M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6 M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2 M10 11v6 M14 11v6</StreamGeometry>
+    <StreamGeometry x:Key="IconeLampada">M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5 M9 18h6 M10 22h4</StreamGeometry>
+    <StreamGeometry x:Key="IconeCubo">M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z M3.3 7L12 12L20.7 7 M12 22V12</StreamGeometry>
+    <StreamGeometry x:Key="IconeHistorico">M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5 M12 7v5l4 2</StreamGeometry>
+    <StreamGeometry x:Key="IconeEngrenagem">M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z M15 12a3 3 0 1 1-6 0a3 3 0 1 1 6 0</StreamGeometry>
+    <StreamGeometry x:Key="IconeNuvem">M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z</StreamGeometry>
+    <StreamGeometry x:Key="IconeInfo">M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0 M12 16v-4 M12 8h.01</StreamGeometry>
+    <StreamGeometry x:Key="IconePainelFechar">M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z M9 3v18 M16 15l-3-3 3-3</StreamGeometry>
+    <StreamGeometry x:Key="IconePainelAbrir">M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z M9 3v18 M14 9l3 3-3 3</StreamGeometry>
+    <StreamGeometry x:Key="IconeMais">M5 12h14 M12 5v14</StreamGeometry>
+    <StreamGeometry x:Key="IconeAtualizar">M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8 M21 3v5h-5 M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16 M8 16H3v5</StreamGeometry>
+    <StreamGeometry x:Key="IconeRestaurar">M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5</StreamGeometry>
+    <StreamGeometry x:Key="IconeEnviarNuvem">M4 14.9A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.24 M12 12v9 M16 16l-4-4-4 4</StreamGeometry>
+    <StreamGeometry x:Key="IconeBaixar">M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3</StreamGeometry>
+    <StreamGeometry x:Key="IconePlay">M6 3L20 12L6 21Z</StreamGeometry>
+    <StreamGeometry x:Key="IconeLinkExterno">M15 3h6v6 M10 14L21 3 M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6</StreamGeometry>
+    <StreamGeometry x:Key="IconeCodigo">M16 18l6-6-6-6 M8 6l-6 6 6 6</StreamGeometry>
+    <StreamGeometry x:Key="IconeVisto">M20 6L9 17l-5-5</StreamGeometry>
+    <StreamGeometry x:Key="IconeX">M18 6L6 18 M6 6l12 12</StreamGeometry>
+    <StreamGeometry x:Key="IconeLista">M3 12h.01 M3 18h.01 M3 6h.01 M8 12h13 M8 18h13 M8 6h13</StreamGeometry>
+    <StreamGeometry x:Key="IconeDesfazer">M9 14L4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11</StreamGeometry>
+    <StreamGeometry x:Key="IconeArquivoMais">M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z M14 2v4a2 2 0 0 0 2 2h4 M12 18v-6 M9 15h6</StreamGeometry>
+    <StreamGeometry x:Key="IconePastaMais">M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z M12 10v6 M9 13h6</StreamGeometry>
+    <StreamGeometry x:Key="IconeAlerta">M21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z M12 9v4 M12 17h.01</StreamGeometry>
+    <StreamGeometry x:Key="IconeSucesso">M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0 M9 12l2 2 4-4</StreamGeometry>
+    <StreamGeometry x:Key="IconeErro">M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0 M15 9l-6 6 M9 9l6 6</StreamGeometry>
+    <StreamGeometry x:Key="IconeDuvida">M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0 M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3 M12 17h.01</StreamGeometry>
+
+    <!-- ===================== Ilustrações (grade 64x64) ===================== -->
+    <!-- Cubo isométrico em três faces, cada uma preenchida e contornada à parte. -->
+    <StreamGeometry x:Key="CuboFaceTopo">M32 6L54 18L32 30L10 18Z</StreamGeometry>
+    <StreamGeometry x:Key="CuboFaceEsquerda">M10 18L32 30L32 56L10 44Z</StreamGeometry>
+    <StreamGeometry x:Key="CuboFaceDireita">M54 18L32 30L32 56L54 44Z</StreamGeometry>
+    <!-- Gaveteiro com a gaveta de baixo entreaberta (Histórico vazio). -->
+    <StreamGeometry x:Key="GaveteiroCorpo">M15 7h34a3 3 0 0 1 3 3v40a3 3 0 0 1-3 3H15a3 3 0 0 1-3-3V10a3 3 0 0 1 3-3Z M12 31h40 M28 19h8</StreamGeometry>
+    <StreamGeometry x:Key="GaveteiroGaveta">M11 37h42a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3V40a3 3 0 0 1 3-3Z M28 46h8</StreamGeometry>
+    <!-- Pasta recebendo arquivos (zona de arraste do Deletar), grade 24x24. -->
+    <StreamGeometry x:Key="IlustracaoPastaEntrada">M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z M12 10v6 M9 13l3 3 3-3</StreamGeometry>
+
+    <!-- ===================== Cores só do CubeBin ===================== -->
+    <SolidColorBrush x:Key="BorderStrongBrush" Color="#3B3160" />
+    <SolidColorBrush x:Key="IlustracaoTracoBrush" Color="#6E6491" />
+    <SolidColorBrush x:Key="IlustracaoFaceClaraBrush" Color="#2A2149" />
+    <SolidColorBrush x:Key="IlustracaoFaceBrush" Color="#231B3E" />
+    <SolidColorBrush x:Key="IlustracaoFaceEscuraBrush" Color="#1B1530" />
+    <!-- O cubo dos pacotes: as três faces em tons do vermelho do CubeBin. -->
+    <SolidColorBrush x:Key="CuboTracoBrush" Color="#F4A7A1" />
+    <SolidColorBrush x:Key="CuboTopoBrush" Color="#B3D64A40" />
+    <SolidColorBrush x:Key="CuboEsquerdaBrush" Color="#99C4362E" />
+    <SolidColorBrush x:Key="CuboDireitaBrush" Color="#8CA32D26" />
+    <!-- Situação de cada arquivo movido (Histórico): organizado, será devolvido, devolvido. -->
+    <SolidColorBrush x:Key="RecallAtivoBrush" Color="#2A2149" />
+    <SolidColorBrush x:Key="RecallPendenteBrush" Color="#24FBBF24" />
+    <SolidColorBrush x:Key="RecallRestauradoBrush" Color="#2434D399" />
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+    <!-- Kit NokyLabs com a cor do CubeBin: vermelho -->
+    <ui:NokyTheme Accent="#C4362E" />
+
+    <!-- ===================== Textos das páginas ===================== -->
+    <Style Selector="TextBlock.titulo">
+      <Setter Property="FontSize" Value="24" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.descricao">
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="Margin" Value="0,6,0,0" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    </Style>
+    <Style Selector="TextBlock.rotulo">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="0,14,0,6" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.pequeno">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+    </Style>
+    <Style Selector="TextBlock.secondary">
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- ===================== Cartões ===================== -->
+    <!-- Cartão que só embrulha uma tabela (sem respiro interno, cantos recortados). -->
+    <Style Selector="Border.lista">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <!-- Cubo clicável na galeria -->
+    <Style Selector="Border.cubo">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="Padding" Value="18" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.15" />
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.cubo:pointerover">
+      <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <!-- Aviso amarelo (ação que não tem volta) -->
+    <Style Selector="Border.aviso">
+      <Setter Property="Background" Value="{DynamicResource WarningSoftBrush}" />
+      <Setter Property="BorderBrush" Value="#42FBBF24" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="18,14" />
+    </Style>
+    <Style Selector="Border.pilula">
+      <Setter Property="CornerRadius" Value="999" />
+      <Setter Property="Padding" Value="10,4" />
+    </Style>
+
+    <!-- ===================== Botões com ícone ===================== -->
+    <!-- Classe "ic": o texto do botão continua sendo o Content (dá para trocar no código, ex.:
+         "Enviando..."), e o ícone vem do Tag: <Button Classes="primary ic" Tag="{StaticResource IconeVisto}" Content="Salvar" /> -->
+    <Style Selector="Button.ic">
+      <Setter Property="ContentTemplate">
+        <DataTemplate>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Viewbox Width="15" Height="15"
+                     IsVisible="{Binding $parent[Button].Tag, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <Path Classes="icon" Data="{Binding $parent[Button].Tag}" />
+            </Viewbox>
+            <TextBlock Text="{Binding}" VerticalAlignment="Center" />
+          </StackPanel>
+        </DataTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Button.primary Path.icon">
+      <Setter Property="Stroke" Value="{DynamicResource OnAccentBrush}" />
+    </Style>
+    <Style Selector="Button.soft Path.icon">
+      <Setter Property="Stroke" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+    <Style Selector="Button.danger Path.icon">
+      <Setter Property="Stroke" Value="{DynamicResource DangerBrush}" />
+    </Style>
+    <Style Selector="Button.danger:pointerover Path.icon">
+      <Setter Property="Stroke" Value="White" />
+    </Style>
+    <Style Selector="Button:disabled Path.icon">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+
+    <!-- ===================== Tabelas (DataGrid) ===================== -->
+    <Style Selector="DataGrid">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="GridLinesVisibility" Value="Horizontal" />
+      <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="RowBackground" Value="Transparent" />
+      <Setter Property="HeadersVisibility" Value="Column" />
+      <Setter Property="CanUserReorderColumns" Value="False" />
+      <Setter Property="RowHeight" Value="38" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="DataGridColumnHeader">
+      <Setter Property="Background" Value="{DynamicResource SidebarBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+      <Setter Property="FontSize" Value="11.5" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="MinHeight" Value="38" />
+      <Setter Property="SeparatorBrush" Value="{DynamicResource BorderBrush}" />
+    </Style>
+    <Style Selector="DataGridCell">
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="DataGridCell TextBlock">
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+    <Style Selector="DataGridRow:pointerover /template/ Rectangle#BackgroundRectangle">
+      <Setter Property="Fill" Value="{DynamicResource SurfaceHoverBrush}" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+      <Setter Property="Fill" Value="{DynamicResource AccentSoftHoverBrush}" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="DataGridRow:selected:pointerover /template/ Rectangle#BackgroundRectangle">
+      <Setter Property="Fill" Value="{DynamicResource AccentSoftHoverBrush}" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <!-- Texto sendo editado dentro da tabela -->
+    <Style Selector="DataGridCell TextBox">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="DataGridCell TextBox:focus /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="DataGridCell TextBox:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+    </Style>
+    <Style Selector="DataGridCell:current /template/ Grid#FocusVisual">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- Árvore do Histórico -->
+    <Style Selector="TreeView">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="TreeViewItem">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="MinHeight" Value="30" />
+    </Style>
+
+    <!-- Divisória arrastável -->
+    <Style Selector="GridSplitter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+  </Application.Styles>
+
+</Application>

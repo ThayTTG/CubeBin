@@ -1,17 +1,23 @@
 using System.IO;
-using System.Windows;
-using System.Windows.Threading;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using CubeBin.App.Services;
 using CubeBin.Core;
 using CubeBin.Core.Models;
 using CubeBin.Core.Services;
-// Os avisos de erro grave abaixo usam a MessageBox NATIVA de propósito: se o próprio tema for a
-// causa do erro, a mensagem ainda precisa conseguir aparecer. O resto do app usa DialogoCubeBin.
-using MessageBox = System.Windows.MessageBox;
 
 namespace CubeBin.App;
 
-public partial class App : System.Windows.Application
+/// <summary>
+/// O app em si: sobe os serviços do Core, os agendadores e o ícone da bandeja. A janela principal
+/// só é criada quando alguém pede para abrir (menu da bandeja), igual à versão 1. Os avisos de
+/// erro grave usam a caixa de mensagem NATIVA do Windows de propósito: se o próprio visual for a
+/// causa do erro, a mensagem ainda precisa conseguir aparecer. O resto do app usa DialogoCubeBin.
+/// </summary>
+public partial class App : Application
 {
     private TrayIconManager? _trayIconManager;
     private BackgroundScheduler? _backgroundScheduler;
@@ -23,30 +29,39 @@ public partial class App : System.Windows.Application
     private readonly InicializacaoService _inicializacaoService = new();
     private readonly RecallService _recallService = new();
 
-    private static readonly string CaminhoLogCrash = Path.Combine(
+    private IClassicDesktopStyleApplicationLifetime? _desktop;
+
+    public static readonly string CaminhoLogCrash = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "CubeBin", "crash.log");
 
-    protected override void OnStartup(StartupEventArgs e)
-    {
-        base.OnStartup(e);
+    /// <summary>A janela principal, se já foi aberta alguma vez (fechar só esconde).</summary>
+    public MainWindow? JanelaPrincipal => _desktop?.MainWindow as MainWindow;
 
-        // Captura qualquer exceção não tratada (thread da UI e threads de background) e grava
-        // em crash.log antes de encerrar — sem isso, uma falha na inicialização derruba o processo
-        // silenciosamente, sem janela, sem ícone de bandeja e sem nada visível no Gerenciador de Tarefas.
-        DispatcherUnhandledException += (_, args) =>
+    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+
+    public override void OnFrameworkInitializationCompleted()
+    {
+        base.OnFrameworkInitializationCompleted();
+
+        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+            return;
+
+        _desktop = desktop;
+        // O app continua residente na bandeja mesmo com a janela fechada (seção 7 da spec).
+        desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        desktop.Exit += (_, _) => AoSair();
+
+        // Captura qualquer exceção não tratada na thread da tela e grava em crash.log antes de
+        // encerrar — sem isso, uma falha na inicialização derruba o processo silenciosamente.
+        Dispatcher.UIThread.UnhandledException += (_, args) =>
         {
             RegistrarCrash(args.Exception);
-            MessageBox.Show(
+            Program.AvisoDoSistema(
                 $"O CubeBin encontrou um erro e vai fechar.\n\nDetalhes em:\n{CaminhoLogCrash}",
-                "Erro inesperado", MessageBoxButton.OK, MessageBoxImage.Error);
+                "Erro inesperado");
             args.Handled = true;
-            Shutdown();
-        };
-        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
-        {
-            if (args.ExceptionObject is Exception ex)
-                RegistrarCrash(ex);
+            Encerrar();
         };
 
         try
@@ -56,11 +71,16 @@ public partial class App : System.Windows.Application
         catch (Exception ex)
         {
             RegistrarCrash(ex);
-            MessageBox.Show(
+            Program.AvisoDoSistema(
                 $"Não foi possível iniciar o CubeBin.\n\nDetalhes em:\n{CaminhoLogCrash}",
-                "Erro na inicialização", MessageBoxButton.OK, MessageBoxImage.Error);
-            Shutdown();
+                "Erro na inicialização");
+            Encerrar();
+            return;
         }
+
+        // "CubeBin.exe --abrir" já abre a janela (útil para o launcher e para testar a tela).
+        if (desktop.Args?.Contains("--abrir", StringComparer.OrdinalIgnoreCase) == true)
+            AbrirJanelaPrincipal();
     }
 
     private void IniciarServicos()
@@ -105,15 +125,16 @@ public partial class App : System.Windows.Application
             new IdleDetectionService(), _notificationService);
         _agenteScheduler.AnaliseFinalizada += () =>
         {
-            if (MainWindow is MainWindow janela)
-                janela.Dispatcher.Invoke(janela.AtualizarSugestoesAposAnaliseExterna);
+            if (JanelaPrincipal is MainWindow janela)
+                Dispatcher.UIThread.Invoke(janela.AtualizarSugestoesAposAnaliseExterna);
         };
         _agenteScheduler.Iniciar();
 
         _trayIconManager = new TrayIconManager(
+            this,
             abrirConfiguracoes: AbrirJanelaPrincipal,
             executarAgora: () => _ = ExecutarOrganizacaoAgoraAsync(),
-            sair: () => Shutdown());
+            sair: Encerrar);
     }
 
     /// <summary>
@@ -140,6 +161,9 @@ public partial class App : System.Windows.Application
 
     private void SincronizarInicializacaoComWindows(AppConfig config)
     {
+        // O registro do Windows só existe no Windows (fora dele o app roda só para testar a tela).
+        if (!OperatingSystem.IsWindows()) return;
+
         var caminhoExecutavel = Environment.ProcessPath;
         if (string.IsNullOrEmpty(caminhoExecutavel)) return;
 
@@ -164,23 +188,28 @@ public partial class App : System.Windows.Application
 
     private void AbrirJanelaPrincipal()
     {
-        var janela = MainWindow ?? new MainWindow(
+        if (_desktop is null) return;
+
+        var janela = JanelaPrincipal ?? new MainWindow(
             _configService!, _notificationService!, _organizadorService!, _inicializacaoService,
             _recallService, _googleDriveService!, ExecutarOrganizacaoAgoraAsync);
-        MainWindow = janela;
+        _desktop.MainWindow = janela;
         janela.Show();
+        if (janela.WindowState == WindowState.Minimized)
+            janela.WindowState = WindowState.Normal;
         janela.Activate();
     }
 
-    protected override void OnExit(ExitEventArgs e)
+    private void Encerrar() => _desktop?.Shutdown();
+
+    private void AoSair()
     {
         _backgroundScheduler?.Parar();
         _agenteScheduler?.Parar();
         _trayIconManager?.Dispose();
-        base.OnExit(e);
     }
 
-    private static void RegistrarCrash(Exception ex)
+    public static void RegistrarCrash(Exception ex)
     {
         try
         {

@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CubeBin.App.DetalhesPacoteWindow"
+        Title="Detalhes do pacote" Height="560" Width="700" MinHeight="420" MinWidth="560"
+        Icon="/app.ico" ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="24">
+    <!-- Cabeçalho: cubo do pacote + nome, data e onde está no Drive -->
+    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,20">
+      <Border DockPanel.Dock="Left" Width="56" Height="56" CornerRadius="16"
+              Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+              Margin="0,0,16,0" VerticalAlignment="Top">
+        <Viewbox Width="36" Height="36">
+          <Canvas Width="64" Height="64">
+            <Path Fill="{StaticResource CuboTopoBrush}" Stroke="{StaticResource CuboTracoBrush}" StrokeThickness="2"
+                  StrokeJoin="Round" Data="{StaticResource CuboFaceTopo}" />
+            <Path Fill="{StaticResource CuboEsquerdaBrush}" Stroke="{StaticResource CuboTracoBrush}" StrokeThickness="2"
+                  StrokeJoin="Round" Data="{StaticResource CuboFaceEsquerda}" />
+            <Path Fill="{StaticResource CuboDireitaBrush}" Stroke="{StaticResource CuboTracoBrush}" StrokeThickness="2"
+                  StrokeJoin="Round" Data="{StaticResource CuboFaceDireita}" />
+          </Canvas>
+        </Viewbox>
+      </Border>
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock x:Name="TxtTituloPacote" Classes="h2" TextTrimming="CharacterEllipsis" />
+        <TextBlock x:Name="TxtDataPacote" Classes="secondary" Margin="0,4,0,0" />
+        <TextBlock x:Name="TxtCaminhoDrivePacote" Classes="pequeno" Margin="0,2,0,0" />
+      </StackPanel>
+    </DockPanel>
+
+    <!-- Ações à direita, a principal por último -->
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button x:Name="BtnAbrirNoDrive" Classes="secondary ic" Content="Abrir no Google Drive"
+              Tag="{StaticResource IconeLinkExterno}" Click="BtnAbrirNoDrive_Click" />
+      <Button x:Name="BtnRestaurarPacote" Classes="primary ic" Content="Restaurar (baixar de volta)"
+              Tag="{StaticResource IconeBaixar}" Click="BtnRestaurarPacote_Click" />
+    </StackPanel>
+
+    <Border Classes="lista">
+      <DataGrid x:Name="GridItensPacote" AutoGenerateColumns="False" IsReadOnly="True">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Arquivo" Binding="{Binding NomeArquivo}" Width="190" />
+          <DataGridTextColumn Header="Categoria" Binding="{Binding Categoria}" Width="110" />
+          <DataGridTextColumn Header="Tamanho" Binding="{Binding TamanhoTexto}" Width="100" />
+          <DataGridTextColumn Header="Local original" Binding="{Binding CaminhoOriginal}" Width="*" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </Border>
+  </DockPanel>
+</Window>

@@ -1,4 +1,5 @@
 using System.IO;
+using Avalonia.Threading;
 using Microsoft.Toolkit.Uwp.Notifications;
 using CubeBin.Core.Models;
 using CubeBin.Core.Services;
@@ -21,7 +22,9 @@ public class ToastNotificationService : INotificationService
         // Um único assinante para todo o tempo de vida do app — evita empilhar handlers
         // duplicados a cada ciclo de execução (cada notificação de início registrava um novo
         // handler antes desta correção, um vazamento pequeno mas real ao longo do tempo).
-        ToastNotificationManagerCompat.OnActivated += OnToastAtivado;
+        // Fora do Windows (só para testar a tela) não há toasts: os avisos viram no-op.
+        if (OperatingSystem.IsWindows())
+            ToastNotificationManagerCompat.OnActivated += OnToastAtivado;
     }
 
     private void OnToastAtivado(ToastNotificationActivatedEventArgsCompat e)
@@ -42,6 +45,7 @@ public class ToastNotificationService : INotificationService
     public Task<bool> NotificarInicioComCancelamentoAsync(int janelaCancelamentoSegundos)
     {
         _canceladoPeloUsuario = false;
+        if (!OperatingSystem.IsWindows()) return Task.FromResult(false);
 
         new ToastContentBuilder()
             .AddText("CubeBin")
@@ -77,6 +81,7 @@ public class ToastNotificationService : INotificationService
     public void NotificarResultadoFinal(ResultadoExecucao resultado)
     {
         _ultimoResultado = resultado;
+        if (!OperatingSystem.IsWindows()) return;
 
         var builder = new ToastContentBuilder()
             .AddArgument("acao", "ver_resultado")
@@ -110,7 +115,7 @@ public class ToastNotificationService : INotificationService
     /// </summary>
     private static void MostrarRelatorioResultado(ResultadoExecucao resultado)
     {
-        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        Dispatcher.UIThread.Invoke(() =>
         {
             if (resultado.Falhas.Count == 0)
             {
@@ -121,8 +126,8 @@ public class ToastNotificationService : INotificationService
                 DialogoCubeBin.Show(
                     $"{resultado.ArquivosMovidos} arquivo(s) organizado(s) com sucesso.{extras}",
                     "Resultado da organização",
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Information);
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
 
@@ -135,13 +140,15 @@ public class ToastNotificationService : INotificationService
                 $"{resultado.ArquivosMovidos} arquivo(s) organizado(s) com sucesso.\n" +
                 $"{resultado.ArquivosComFalha} arquivo(s) NÃO puderam ser organizados:\n\n{detalhes}{avisoRecall}",
                 "Alguns arquivos não puderam ser organizados",
-                System.Windows.MessageBoxButton.OK,
-                System.Windows.MessageBoxImage.Warning);
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
         });
     }
 
     public void NotificarMensagemSimples(string titulo, string mensagem)
     {
+        if (!OperatingSystem.IsWindows()) return;
+
         new ToastContentBuilder()
             .AddText(titulo)
             .AddText(mensagem)
@@ -157,12 +164,12 @@ public class ToastNotificationService : INotificationService
         var resultado = DialogoCubeBin.Show(
             mensagem,
             "Aviso de risco",
-            System.Windows.MessageBoxButton.YesNo,
-            System.Windows.MessageBoxImage.Warning,
-            System.Windows.MessageBoxResult.No,
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No,
             textoConfirmar: "Ativar mesmo assim",
             textoCancelar: "Cancelar");
 
-        return resultado == System.Windows.MessageBoxResult.Yes;
+        return resultado == MessageBoxResult.Yes;
     }
 }

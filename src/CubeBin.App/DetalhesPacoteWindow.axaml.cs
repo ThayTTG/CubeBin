@@ -1,12 +1,13 @@
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Windows;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using CubeBin.Core.Models;
 using CubeBin.Core.Services;
 // MessageBox aponta para o diálogo no tema da NokyLabs (mesma forma de chamar da MessageBox nativa).
 using MessageBox = CubeBin.App.DialogoCubeBin;
-using OpenFolderDialog = Microsoft.Win32.OpenFolderDialog;
 
 namespace CubeBin.App;
 
@@ -16,8 +17,14 @@ namespace CubeBin.App;
 /// </summary>
 public partial class DetalhesPacoteWindow : Window
 {
-    private readonly PacoteBackup _pacote;
-    private readonly GoogleDriveService _googleDriveService;
+    private readonly PacoteBackup _pacote = new();
+    private readonly GoogleDriveService _googleDriveService = null!;
+
+    public DetalhesPacoteWindow()
+    {
+        // Só para o previewer do Avalonia.
+        InitializeComponent();
+    }
 
     public DetalhesPacoteWindow(PacoteBackup pacote, GoogleDriveService googleDriveService)
     {
@@ -35,7 +42,7 @@ public partial class DetalhesPacoteWindow : Window
         BtnAbrirNoDrive.IsEnabled = !string.IsNullOrWhiteSpace(pacote.LinkDrive);
     }
 
-    private void BtnAbrirNoDrive_Click(object sender, RoutedEventArgs e)
+    private void BtnAbrirNoDrive_Click(object? sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(_pacote.LinkDrive)) return;
 
@@ -50,10 +57,14 @@ public partial class DetalhesPacoteWindow : Window
         }
     }
 
-    private async void BtnRestaurarPacote_Click(object sender, RoutedEventArgs e)
+    private async void BtnRestaurarPacote_Click(object? sender, RoutedEventArgs e)
     {
-        var dialogo = new OpenFolderDialog { Title = "Escolher pasta para restaurar o pacote" };
-        if (dialogo.ShowDialog() != true) return;
+        var pastas = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Escolher pasta para restaurar o pacote"
+        });
+        var pastaEscolhida = pastas.Count > 0 ? pastas[0].TryGetLocalPath() : null;
+        if (string.IsNullOrEmpty(pastaEscolhida)) return;
 
         BtnRestaurarPacote.IsEnabled = false;
         BtnRestaurarPacote.Content = "Restaurando...";
@@ -63,9 +74,9 @@ public partial class DetalhesPacoteWindow : Window
         try
         {
             await _googleDriveService.BaixarArquivoAsync(_pacote.IdArquivoDrive, caminhoZipTemp);
-            ZipFile.ExtractToDirectory(caminhoZipTemp, dialogo.FolderName, overwriteFiles: true);
+            ZipFile.ExtractToDirectory(caminhoZipTemp, pastaEscolhida, overwriteFiles: true);
 
-            MessageBox.Show($"Pacote restaurado em:\n{dialogo.FolderName}", "CubeBin",
+            MessageBox.Show($"Pacote restaurado em:\n{pastaEscolhida}", "CubeBin",
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)

@@ -10,6 +10,11 @@ public class IdleDetectionService
 {
     public TimeSpan ObterTempoOcioso()
     {
+        // Fora do Windows (só para testar a tela) não há como saber: considera o usuário presente,
+        // então nada é organizado sozinho.
+        if (!OperatingSystem.IsWindows())
+            return TimeSpan.Zero;
+
         var info = new NativeMethods.LASTINPUTINFO();
         info.cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(info);
 

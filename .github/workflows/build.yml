@@ -23,6 +23,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: true   # o Kit NokyLabs (lib/NokyLabs.UI)
 
       - uses: actions/setup-dotnet@v5
         with:
@@ -36,3 +38,6 @@ jobs:
 
       - name: Compilar
         run: dotnet build CubeBin.sln -c Release
+
+      - name: Testes
+        run: dotnet test tests/CubeBin.Tests -c Release

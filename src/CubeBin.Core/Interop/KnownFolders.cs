@@ -20,6 +20,10 @@ public static class KnownFolders
 
     private static string? ObterCaminho(Guid idPasta)
     {
+        // Fora do Windows (só para testar a tela) usa as pastas padrão do .NET logo abaixo.
+        if (!OperatingSystem.IsWindows())
+            return null;
+
         if (SHGetKnownFolderPath(ref idPasta, 0, IntPtr.Zero, out var ponteiro) != 0)
             return null;
 

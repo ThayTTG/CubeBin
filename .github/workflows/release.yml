@@ -26,6 +26,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: true   # o Kit NokyLabs (lib/NokyLabs.UI)
 
       - uses: actions/setup-dotnet@v5
         with:
@@ -81,6 +83,9 @@ jobs:
             Copy-Item "src/CubeBin.Core/GoogleDriveCredentials.Secrets.cs.example" $destino
             Write-Host "::warning::Sem credenciais do Google Drive: o backup na nuvem ficará desativado neste pacote."
           }
+
+      - name: Testes
+        run: dotnet test tests/CubeBin.Tests -c Release
 
       - name: Publicar (win-x64, arquivo único)
         run: >

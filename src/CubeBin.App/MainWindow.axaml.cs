@@ -1,31 +1,19 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Media;
-using Microsoft.Win32;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Media;
+using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using CubeBin.Core;
 using CubeBin.Core.Models;
 using CubeBin.Core.Services;
 // MessageBox aponta para o diálogo no tema da NokyLabs (mesma forma de chamar da MessageBox nativa).
 using MessageBox = CubeBin.App.DialogoCubeBin;
-using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
-using Button = System.Windows.Controls.Button;
-using ColumnDefinition = System.Windows.Controls.ColumnDefinition;
-using TextBlock = System.Windows.Controls.TextBlock;
-using DragEventArgs = System.Windows.DragEventArgs;
-using DataFormats = System.Windows.DataFormats;
-using DragDropEffects = System.Windows.DragDropEffects;
-using ContextMenu = System.Windows.Controls.ContextMenu;
-using MenuItem = System.Windows.Controls.MenuItem;
-using TreeViewItem = System.Windows.Controls.TreeViewItem;
-using TabItem = System.Windows.Controls.TabItem;
-using SelectionChangedEventArgs = System.Windows.Controls.SelectionChangedEventArgs;
-using DataGridCell = System.Windows.Controls.DataGridCell;
-using DataGridRow = System.Windows.Controls.DataGridRow;
-using DataGridCellInfo = System.Windows.Controls.DataGridCellInfo;
-using DataGridEditingUnit = System.Windows.Controls.DataGridEditingUnit;
 
 namespace CubeBin.App;
 
@@ -57,13 +45,28 @@ public partial class MainWindow : Window
     // ===================== Sidebar recolhível (item 3 do refinamento visual) =====================
     private const double LarguraSidebarAberta = 248;
     private const double LarguraSidebarRecolhida = 68;
-    private ColumnDefinition? _colunaSidebar;
-    private Button? _botaoRecolherSidebar;
-    private FrameworkElement? _painelNomeApp;
-    private FrameworkElement? _cardVersao;
-    private TextBlock? _txtRecolherMenu;
     private bool _sidebarRecolhida;
     private List<TextBlock> _textosAbaSidebar = new();
+
+    /// <summary>Opções da coluna "Tipo" das regras (a lista do ComboBox ao editar a célula).</summary>
+    public static string[] OpcoesTipoDestino { get; } = { "Local", "Google Drive" };
+
+    /// <summary>A página aberta agora (Tag do item do menu lateral).</summary>
+    private string _paginaAtual = "organizar";
+
+    public MainWindow()
+    {
+        // Só para o previewer do Avalonia.
+        InitializeComponent();
+        _configService = null!;
+        _notificationService = null!;
+        _organizadorService = null!;
+        _inicializacaoService = null!;
+        _recallService = null!;
+        _googleDriveService = null!;
+        _executarAgora = () => Task.CompletedTask;
+        _config = new AppConfig();
+    }
 
     public MainWindow(
         ConfigService configService,
@@ -76,7 +79,6 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         TemaJanelaEscura.Aplicar(this);
-        ColunaTipoDestino.ItemsSource = new[] { "Local", "Google Drive" };
         _configService = configService;
         _notificationService = notificationService;
         _organizadorService = organizadorService;
@@ -89,15 +91,15 @@ public partial class MainWindow : Window
 
         // Indicador visual (item 2 do feedback de uso): mostra a barra enquanto qualquer
         // organização estiver rodando, seja disparada manualmente ou pelo agendador automático.
-        _organizadorService.ExecucaoIniciada += () => Dispatcher.Invoke(() => PainelStatus.Visibility = Visibility.Visible);
-        _googleDriveService.ProgressoAlterado += (nome, mbps) => Dispatcher.Invoke(() =>
+        _organizadorService.ExecucaoIniciada += () => Dispatcher.UIThread.Post(() => PainelStatus.IsVisible = true);
+        _googleDriveService.ProgressoAlterado += (nome, mbps) => Dispatcher.UIThread.Post(() =>
         {
-            PainelStatus.Visibility = Visibility.Visible;
+            PainelStatus.IsVisible = true;
             TxtStatusOrganizando.Text = $"{nome} — {mbps:F1} Mbps";
         });
-        _organizadorService.ExecucaoFinalizada += () => Dispatcher.Invoke(() =>
+        _organizadorService.ExecucaoFinalizada += () => Dispatcher.UIThread.Post(() =>
         {
-            PainelStatus.Visibility = Visibility.Collapsed;
+            PainelStatus.IsVisible = false;
             TxtStatusOrganizando.Text = "Organizando arquivos...";
             CarregarPendencias();
             CarregarHistorico();
@@ -110,10 +112,14 @@ public partial class MainWindow : Window
 
         Closing += (_, e) =>
         {
-            // Fecha para a bandeja em vez de encerrar o processo (App.xaml define ShutdownMode).
+            // Fecha para a bandeja em vez de encerrar o processo (App.axaml.cs define ShutdownMode).
+            // Só o "Sair" da bandeja (encerramento do app) fecha a janela de verdade.
+            if (e.CloseReason != WindowCloseReason.WindowClosing || e.IsProgrammatic) return;
             e.Cancel = true;
             Hide();
         };
+
+        LigarEventos();
 
         CarregarPastasNaGrid();
         CarregarRegrasNaGrid();
@@ -124,6 +130,7 @@ public partial class MainWindow : Window
         CarregarConfigAgente();
         CarregarSugestoes();
         CarregarCubos();
+        AtualizarGridDeletar(); // já começa mostrando a zona de arraste vazia
 
         _textosAbaSidebar = new List<TextBlock>
         {
@@ -132,63 +139,77 @@ public partial class MainWindow : Window
         };
 
         TxtVersaoSobre.Text = $"Versão {InfoApp.Versao}";
-
-        // As partes nomeadas dentro do template do TabControl (coluna da sidebar, botão de
-        // recolher) só existem depois que o template é aplicado — Loaded garante isso.
-        Loaded += (_, _) => InicializarSidebarRecolhivel();
+        CardVersao.Version = $"versão {InfoApp.Versao}";
+        BotaoRecolherSidebar.Click += (_, _) => AlternarSidebarRecolhida();
     }
 
     /// <summary>
-    /// Localiza as partes do template do TabControl principal (item 3 do refinamento visual) via
-    /// FrameworkTemplate.FindName — o jeito padrão do WPF de alcançar elementos nomeados dentro de
-    /// um ControlTemplate a partir do code-behind, depois que o template já foi aplicado.
+    /// Liga os eventos que não dá para declarar no XAML: o menu lateral, as sub-abas do Organizar,
+    /// os cliques com o botão direito nas tabelas, os duplos cliques e a zona de arraste do Deletar.
     /// </summary>
-    private void InicializarSidebarRecolhivel()
+    private void LigarEventos()
     {
-        AbaPrincipal.ApplyTemplate();
-        _colunaSidebar = AbaPrincipal.Template.FindName("ColunaSidebar", AbaPrincipal) as ColumnDefinition;
-        _botaoRecolherSidebar = AbaPrincipal.Template.FindName("BotaoRecolherSidebar", AbaPrincipal) as Button;
-        _painelNomeApp = AbaPrincipal.Template.FindName("PainelNomeApp", AbaPrincipal) as FrameworkElement;
-        _cardVersao = AbaPrincipal.Template.FindName("CardVersao", AbaPrincipal) as FrameworkElement;
-        _txtRecolherMenu = AbaPrincipal.Template.FindName("TxtRecolherMenu", AbaPrincipal) as TextBlock;
+        foreach (var nav in new[] { NavOrganizar, NavLimpar, NavDeletar, NavSugestoes, NavCubos,
+                                    NavHistorico, NavConfiguracoes, NavLogin, NavSobre })
+        {
+            nav.IsCheckedChanged += (s, _) =>
+            {
+                if (s is RadioButton { IsChecked: true, Tag: string pagina }) TrocarDePagina(pagina);
+            };
+        }
 
-        if (AbaPrincipal.Template.FindName("TxtVersaoSidebar", AbaPrincipal) is TextBlock txtVersao)
-            txtVersao.Text = $"CubeBin {InfoApp.Versao}";
+        SubAbaRegras.IsCheckedChanged += (_, _) => AtualizarSubAbaOrganizar();
+        SubAbaPendencias.IsCheckedChanged += (_, _) => AtualizarSubAbaOrganizar();
 
-        if (_botaoRecolherSidebar is not null)
-            _botaoRecolherSidebar.Click += (_, _) => AlternarSidebarRecolhida();
+        // Botão direito: chega antes da seleção da tabela (Tunnel), como o PreviewMouseRightButtonDown do WPF.
+        GridRegras.AddHandler(PointerPressedEvent, GridRegras_PointerPressed, RoutingStrategies.Tunnel);
+        GridRecall.AddHandler(PointerPressedEvent, GridRecall_PointerPressed, RoutingStrategies.Tunnel);
+
+        GridPendencias.DoubleTapped += GridPendencias_DoubleTapped;
+        GridHistorico.DoubleTapped += GridHistorico_DoubleTapped;
+        ListaCubos.AddHandler(PointerReleasedEvent, Cubo_PointerReleased, RoutingStrategies.Bubble);
+
+        PainelVazioDeletar.AddHandler(DragDrop.DragEnterEvent, PainelVazioDeletar_DragEnter);
+        PainelVazioDeletar.AddHandler(DragDrop.DragOverEvent, PainelVazioDeletar_DragEnter);
+        PainelVazioDeletar.AddHandler(DragDrop.DragLeaveEvent, PainelVazioDeletar_DragLeave);
+        PainelVazioDeletar.AddHandler(DragDrop.DropEvent, PainelVazioDeletar_Drop);
+    }
+
+    private void AtualizarSubAbaOrganizar()
+    {
+        PainelRegras.IsVisible = SubAbaRegras.IsChecked == true;
+        PainelPendencias.IsVisible = SubAbaPendencias.IsChecked == true;
     }
 
     private void AlternarSidebarRecolhida()
     {
         _sidebarRecolhida = !_sidebarRecolhida;
 
-        if (_colunaSidebar is not null)
-            _colunaSidebar.Width = new GridLength(_sidebarRecolhida ? LarguraSidebarRecolhida : LarguraSidebarAberta);
+        GradeJanela.ColumnDefinitions[0].Width = new GridLength(_sidebarRecolhida ? LarguraSidebarRecolhida : LarguraSidebarAberta);
+        PainelSidebar.Margin = _sidebarRecolhida ? new Thickness(8, 20, 8, 14) : new Thickness(14, 20, 14, 14);
 
-        var visibilidade = _sidebarRecolhida ? Visibility.Collapsed : Visibility.Visible;
+        var visivel = !_sidebarRecolhida;
         foreach (var texto in _textosAbaSidebar)
-            texto.Visibility = visibilidade;
+            texto.IsVisible = visivel;
 
-        // Recolhido: só os ícones centralizados (o nome de cada aba aparece na dica ao passar o mouse).
-        if (_painelNomeApp is not null) _painelNomeApp.Visibility = visibilidade;
-        if (_cardVersao is not null) _cardVersao.Visibility = visibilidade;
-        if (_txtRecolherMenu is not null) _txtRecolherMenu.Visibility = visibilidade;
+        // Recolhido: só os ícones (o nome de cada aba aparece na dica ao passar o mouse).
+        PainelNomeApp.IsVisible = visivel;
+        CardVersao.IsVisible = visivel;
+        TxtRecolherMenu.IsVisible = visivel;
+        TxtTituloMenu.IsVisible = visivel;
 
-        if (_botaoRecolherSidebar is not null)
-        {
-            _botaoRecolherSidebar.Tag = FindResource(_sidebarRecolhida ? "IconePainelAbrir" : "IconePainelFechar");
-            _botaoRecolherSidebar.ToolTip = _sidebarRecolhida ? "Expandir menu" : "Recolher menu";
-        }
+        if (this.FindResource(_sidebarRecolhida ? "IconePainelAbrir" : "IconePainelFechar") is Geometry icone)
+            IconeRecolher.Data = icone;
+        ToolTip.SetTip(BotaoRecolherSidebar, _sidebarRecolhida ? "Expandir menu" : "Recolher menu");
     }
 
     // ===================== SOBRE =====================
 
-    private void BtnSobreSite_Click(object sender, RoutedEventArgs e) => AbrirLink(InfoApp.UrlSite);
+    private void BtnSobreSite_Click(object? sender, RoutedEventArgs e) => AbrirLink(InfoApp.UrlSite);
 
-    private void BtnSobreGithub_Click(object sender, RoutedEventArgs e) => AbrirLink(InfoApp.UrlCodigo);
+    private void BtnSobreGithub_Click(object? sender, RoutedEventArgs e) => AbrirLink(InfoApp.UrlCodigo);
 
-    private void BtnSobreProblema_Click(object sender, RoutedEventArgs e) => AbrirLink(InfoApp.UrlProblema);
+    private void BtnSobreProblema_Click(object? sender, RoutedEventArgs e) => AbrirLink(InfoApp.UrlProblema);
 
     private static void AbrirLink(string url)
     {
@@ -200,20 +221,45 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Bloqueia sair da aba Histórico (que agora absorve o Recall) enquanto houver marcações de
-    /// devolução pendentes de salvar — o usuário precisa salvar ou desfazer antes de continuar.
+    /// Troca a página visível. Bloqueia sair da aba Histórico (que agora absorve o Recall) enquanto
+    /// houver marcações de devolução pendentes de salvar — o usuário precisa salvar ou desfazer antes.
     /// </summary>
-    private void AbaPrincipal_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void TrocarDePagina(string pagina)
     {
-        if (_bloqueandoTrocaDeAba) return;
+        if (_bloqueandoTrocaDeAba || pagina == _paginaAtual) return;
 
-        if (e.RemovedItems.Count > 0 && ReferenceEquals(e.RemovedItems[0], TabHistorico) && _pilhaPendentesRecall.Count > 0)
+        if (_paginaAtual == "historico" && _pilhaPendentesRecall.Count > 0)
         {
-            AvisarESegurarNoRecall();
-            _bloqueandoTrocaDeAba = true;
-            AbaPrincipal.SelectedItem = TabHistorico;
-            _bloqueandoTrocaDeAba = false;
+            // Depois que o clique atual terminar: volta a marcação do menu para o Histórico e avisa.
+            Dispatcher.UIThread.Post(() =>
+            {
+                _bloqueandoTrocaDeAba = true;
+                NavHistorico.IsChecked = true;
+                _bloqueandoTrocaDeAba = false;
+                AvisarESegurarNoRecall();
+            });
+            return;
         }
+
+        _paginaAtual = pagina;
+        var paginas = new Dictionary<string, Control>
+        {
+            ["organizar"] = PaginaOrganizar,
+            ["limpar"] = PaginaLimpar,
+            ["deletar"] = PaginaDeletar,
+            ["sugestoes"] = PaginaSugestoes,
+            ["cubos"] = PaginaCubos,
+            ["historico"] = PaginaHistorico,
+            ["configuracoes"] = PaginaConfiguracoes,
+            ["login"] = PaginaLogin,
+            ["sobre"] = PaginaSobre
+        };
+
+        foreach (var (chave, controle) in paginas)
+            controle.IsVisible = chave == pagina;
+
+        // A mesma entrada suave dos outros apps da NokyLabs.
+        NokyLabs.UI.Anim.PlayEntrance(paginas[pagina]);
     }
 
     private static void AvisarESegurarNoRecall()
@@ -240,17 +286,17 @@ public partial class MainWindow : Window
 
     private PastaExibicao? PastaSelecionada => GridPastas.SelectedItem as PastaExibicao;
 
-    private void BtnAdicionarPasta_Click(object sender, RoutedEventArgs e)
+    private async void BtnAdicionarPasta_Click(object? sender, RoutedEventArgs e)
     {
-        var dialogo = new OpenFolderDialog { Title = "Selecionar pasta para monitorar" };
-        if (dialogo.ShowDialog() != true) return;
+        var pastaEscolhida = await EscolherPastaAsync("Selecionar pasta para monitorar");
+        if (pastaEscolhida is null) return;
 
-        var nome = Path.GetFileName(dialogo.FolderName.TrimEnd(Path.DirectorySeparatorChar));
+        var nome = Path.GetFileName(pastaEscolhida.TrimEnd(Path.DirectorySeparatorChar));
         var pasta = new PastaMonitorada
         {
             Id = Guid.NewGuid().ToString("N")[..8],
-            Nome = string.IsNullOrWhiteSpace(nome) ? dialogo.FolderName : nome,
-            Caminho = dialogo.FolderName,
+            Nome = string.IsNullOrWhiteSpace(nome) ? pastaEscolhida : nome,
+            Caminho = pastaEscolhida,
             Removivel = true
         };
 
@@ -259,7 +305,7 @@ public partial class MainWindow : Window
         CarregarPastasNaGrid();
     }
 
-    private void BtnRemoverPasta_Click(object sender, RoutedEventArgs e)
+    private void BtnRemoverPasta_Click(object? sender, RoutedEventArgs e)
     {
         var selecionada = PastaSelecionada;
         if (selecionada is null) return;
@@ -283,7 +329,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void BtnLimparPastaPadrao_Click(object sender, RoutedEventArgs e)
+    private void BtnLimparPastaPadrao_Click(object? sender, RoutedEventArgs e)
     {
         var selecionada = PastaSelecionada;
         if (selecionada is null || selecionada.Pasta.Removivel) return;
@@ -293,7 +339,7 @@ public partial class MainWindow : Window
         CarregarPastasNaGrid();
     }
 
-    private void BtnRestaurarPastaPadrao_Click(object sender, RoutedEventArgs e)
+    private void BtnRestaurarPastaPadrao_Click(object? sender, RoutedEventArgs e)
     {
         var selecionada = PastaSelecionada;
         if (selecionada is null || selecionada.Pasta.Removivel) return;
@@ -303,7 +349,7 @@ public partial class MainWindow : Window
         CarregarPastasNaGrid();
     }
 
-    private void BtnSalvarPastas_Click(object sender, RoutedEventArgs e)
+    private void BtnSalvarPastas_Click(object? sender, RoutedEventArgs e)
     {
         // Ativar organizar_subpastas exige confirmação explícita do risco (seção 6 da spec).
         foreach (var item in _pastasExibicao)
@@ -391,7 +437,7 @@ public partial class MainWindow : Window
         GridRegras.ItemsSource = _regrasExibicao;
     }
 
-    private void BtnUsarPadrao_Click(object sender, RoutedEventArgs e)
+    private void BtnUsarPadrao_Click(object? sender, RoutedEventArgs e)
     {
         if (_pastaContextoRegras is null) return;
         _pastaContextoRegras.RegrasPersonalizadas = null;
@@ -399,7 +445,7 @@ public partial class MainWindow : Window
         CarregarRegrasNaGrid();
     }
 
-    private void BtnAdicionarRegra_Click(object sender, RoutedEventArgs e)
+    private void BtnAdicionarRegra_Click(object? sender, RoutedEventArgs e)
     {
         var novaChave = $"nova_regra_{_regrasExibicao.Count + 1}";
         var regra = new RegraExtensao { Chave = novaChave, Extensoes = new List<string>(), Destino = "" };
@@ -408,7 +454,7 @@ public partial class MainWindow : Window
         GridRegras.ItemsSource = _regrasExibicao;
     }
 
-    private void BtnRemoverRegra_Click(object sender, RoutedEventArgs e)
+    private void BtnRemoverRegra_Click(object? sender, RoutedEventArgs e)
     {
         if (GridRegras.SelectedItem is not RegraExibicao selecionada) return;
         _regrasExibicao.Remove(selecionada);
@@ -416,7 +462,7 @@ public partial class MainWindow : Window
         GridRegras.ItemsSource = _regrasExibicao;
     }
 
-    private void BtnSalvarRegras_Click(object sender, RoutedEventArgs e)
+    private void BtnSalvarRegras_Click(object? sender, RoutedEventArgs e)
     {
         var novoDicionario = new Dictionary<string, RegraExtensao>();
         foreach (var item in _regrasExibicao)
@@ -437,31 +483,37 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Botão direito numa célula das Regras: seleciona a célula clicada e mostra um menu com
+    /// Botão direito numa célula das Regras: seleciona a linha clicada e mostra um menu com
     /// "Editar &lt;coluna&gt;" (entra em edição daquele campo específico) e "Editar subpastas por
     /// extensão". O clique único continua só selecionando, e o duplo clique continua editando o
-    /// texto normalmente — comportamento padrão do DataGrid do WPF, sem interferência nossa.
+    /// texto normalmente — comportamento padrão da tabela, sem interferência nossa.
     /// </summary>
-    private void GridRegras_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    private void GridRegras_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        var celula = EncontrarAncestral<DataGridCell>(e.OriginalSource as DependencyObject);
-        if (celula is null) return;
+        if (!e.GetCurrentPoint(GridRegras).Properties.IsRightButtonPressed) return;
 
-        var linha = EncontrarAncestral<DataGridRow>(celula);
-        if (linha?.Item is not RegraExibicao regra) return;
+        var origem = e.Source as Visual;
+        var linha = origem?.FindAncestorOfType<DataGridRow>(includeSelf: true);
+        if (linha?.DataContext is not RegraExibicao regra) return;
+
+        var celula = origem?.FindAncestorOfType<DataGridCell>(includeSelf: true);
+        var coluna = celula is null ? null : GridRegras.Columns.FirstOrDefault(c =>
+            c.GetCellContent(linha) is Control conteudo &&
+            (ReferenceEquals(conteudo, celula.Content) || conteudo.FindAncestorOfType<DataGridCell>() == celula));
 
         GridRegras.SelectedItem = regra;
-        var coluna = celula.Column;
         var nomeColuna = coluna?.Header?.ToString() ?? "campo";
 
-        var menu = new ContextMenu { PlacementTarget = GridRegras };
+        var menu = new ContextMenu();
 
-        var itemEditar = new MenuItem { Header = $"Editar {nomeColuna}" };
+        var itemEditar = new MenuItem { Header = $"Editar {nomeColuna}", IsEnabled = coluna is { IsReadOnly: false } };
         itemEditar.Click += (_, _) =>
         {
             if (coluna is null) return;
-            GridRegras.CurrentCell = new DataGridCellInfo(regra, coluna);
-            GridRegras.BeginEdit();
+            GridRegras.SelectedItem = regra;
+            GridRegras.CurrentColumn = coluna;
+            GridRegras.Focus();
+            Dispatcher.UIThread.Post(() => GridRegras.BeginEdit(), DispatcherPriority.Input);
         };
         menu.Items.Add(itemEditar);
 
@@ -469,31 +521,23 @@ public partial class MainWindow : Window
         itemSubpastas.Click += (_, _) => AbrirEditorSubpastas();
         menu.Items.Add(itemSubpastas);
 
-        menu.Items.Add(new System.Windows.Controls.Separator());
+        menu.Items.Add(new Separator());
 
         var itemRemover = new MenuItem { Header = "Remover regra selecionada" };
         itemRemover.Click += BtnRemoverRegra_Click;
         menu.Items.Add(itemRemover);
 
-        menu.IsOpen = true;
+        menu.Open(GridRegras);
         e.Handled = true;
-    }
-
-    private static T? EncontrarAncestral<T>(DependencyObject? atual) where T : DependencyObject
-    {
-        while (atual is not null && atual is not T)
-            atual = VisualTreeHelper.GetParent(atual);
-        return atual as T;
     }
 
     /// <summary>
     /// Abre o diálogo de subpastas por extensão para a regra selecionada (item 1 do feedback de uso).
-    /// Acessível por duplo clique na linha ou pelo menu de botão direito (item 1.1).
+    /// Acessível pelo menu de botão direito (item 1.1).
     /// </summary>
-    private void AbrirEditorSubpastas()
+    private async void AbrirEditorSubpastas()
     {
-        // Se uma célula (ex: "Extensões") ainda estiver sendo editada, o WPF não permite
-        // Items.Refresh() com a transação de edição aberta — confirma antes de continuar.
+        // Se uma célula (ex: "Extensões") ainda estiver sendo editada, confirma antes de continuar.
         GridRegras.CommitEdit(DataGridEditingUnit.Cell, true);
         GridRegras.CommitEdit(DataGridEditingUnit.Row, true);
 
@@ -512,12 +556,13 @@ public partial class MainWindow : Window
             return;
         }
 
-        var dialogo = new SubpastasWindow(extensoes, selecionada.Subpastas) { Owner = this };
-        if (dialogo.ShowDialog() == true)
+        var dialogo = new SubpastasWindow(extensoes, selecionada.Subpastas);
+        if (await dialogo.ShowDialog<bool>(this))
         {
             selecionada.Subpastas = dialogo.Resultado;
-            GridRegras.CommitEdit(DataGridEditingUnit.Row, true);
-            GridRegras.Items.Refresh();
+            GridRegras.ItemsSource = null;
+            GridRegras.ItemsSource = _regrasExibicao;
+            GridRegras.SelectedItem = selecionada;
         }
     }
 
@@ -591,10 +636,10 @@ public partial class MainWindow : Window
         AtualizarStatusGoogleDrive();
     }
 
-    private void BtnSalvarConfigGerais_Click(object sender, RoutedEventArgs e)
+    private void BtnSalvarConfigGerais_Click(object? sender, RoutedEventArgs e)
     {
         if (!int.TryParse(TxtExecucoesPorDia.Text, out var execucoesPorDia) || execucoesPorDia <= 0 || execucoesPorDia > 48 ||
-            !TimeOnly.TryParseExact(TxtHorarioInicio.Text.Trim(), "HH:mm", out var horarioInicio) ||
+            !TimeOnly.TryParseExact((TxtHorarioInicio.Text ?? "").Trim(), "HH:mm", out var horarioInicio) ||
             !int.TryParse(TxtTempoAusencia.Text, out var ausencia) || ausencia <= 0 ||
             !int.TryParse(TxtJanelaCancelamento.Text, out var janela) || janela < 0 ||
             !int.TryParse(TxtManterUltimosN.Text, out var manterN) || manterN <= 0)
@@ -610,8 +655,8 @@ public partial class MainWindow : Window
         _config.HorarioInicio = horarioInicio;
         _config.TempoAusenciaMinutos = ausencia;
         _config.JanelaCancelamentoSegundos = janela;
-        _config.DiretorioTemporario = TxtDiretorioTemporario.Text.Trim();
-        _config.Backup.DiretorioCsv = TxtDiretorioBackup.Text.Trim();
+        _config.DiretorioTemporario = (TxtDiretorioTemporario.Text ?? "").Trim();
+        _config.Backup.DiretorioCsv = (TxtDiretorioBackup.Text ?? "").Trim();
         _config.Backup.ManterUltimosN = manterN;
         _config.IniciarComWindows = ChkIniciarComWindows.IsChecked == true;
 
@@ -632,6 +677,9 @@ public partial class MainWindow : Window
     /// </summary>
     private void AtualizarInicializacaoComWindows()
     {
+        // O registro do Windows só existe no Windows (fora dele o app roda só para testar a tela).
+        if (!OperatingSystem.IsWindows()) return;
+
         var caminhoExecutavel = Environment.ProcessPath;
         if (string.IsNullOrEmpty(caminhoExecutavel)) return;
 
@@ -648,21 +696,21 @@ public partial class MainWindow : Window
         if (!conectado)
         {
             TxtLoginStatus.Text = "Não conectado";
-            TxtLoginStatus.Visibility = Visibility.Visible;
-            ChipContaConectada.Visibility = Visibility.Collapsed;
+            TxtLoginStatus.IsVisible = true;
+            ChipContaConectada.IsVisible = false;
             TxtLoginArmazenamento.Text = "";
             return;
         }
 
         // Conectado: o chip substitui o texto simples "Conectado", dando um indicativo visual mais
         // claro de conta ativa (item 2 do refinamento visual).
-        TxtLoginStatus.Visibility = Visibility.Collapsed;
+        TxtLoginStatus.IsVisible = false;
 
         try
         {
             var info = await _googleDriveService.ObterInfoContaAsync();
             TxtChipEmail.Text = info.Email;
-            ChipContaConectada.Visibility = Visibility.Visible;
+            ChipContaConectada.IsVisible = true;
             TxtLoginArmazenamento.Text = info.TotalBytes is > 0
                 ? $"Armazenamento: {info.UsadoBytes / 1_073_741_824.0:F1} GB usados de {info.TotalBytes / 1_073_741_824.0:F1} GB"
                 : $"Armazenamento usado: {info.UsadoBytes / 1_073_741_824.0:F1} GB";
@@ -672,7 +720,7 @@ public partial class MainWindow : Window
             // Conectado, mas não deu pra buscar os dados da conta agora (ex.: sem rede no momento) —
             // mostra o chip mesmo assim, só sem o e-mail, em vez de não indicar nada.
             TxtChipEmail.Text = "Conectado";
-            ChipContaConectada.Visibility = Visibility.Visible;
+            ChipContaConectada.IsVisible = true;
             TxtLoginArmazenamento.Text = "";
         }
     }
@@ -681,7 +729,7 @@ public partial class MainWindow : Window
     /// Faz login no Google usando as credenciais embutidas do app (abre o navegador só na
     /// primeira vez — depois disso o token salvo se renova sozinho, sem precisar logar de novo).
     /// </summary>
-    private async void BtnConectarGoogleDrive_Click(object sender, RoutedEventArgs e)
+    private async void BtnConectarGoogleDrive_Click(object? sender, RoutedEventArgs e)
     {
         if (!GoogleDriveCredentials.EstaConfigurado)
         {
@@ -711,7 +759,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void BtnExecutarAgora_Click(object sender, RoutedEventArgs e)
+    private async void BtnExecutarAgora_Click(object? sender, RoutedEventArgs e)
     {
         BtnExecutarAgora.IsEnabled = false;
         BtnExecutarAgora.Content = "Organizando...";
@@ -739,9 +787,9 @@ public partial class MainWindow : Window
         GridPendencias.ItemsSource = pendencias.Where(p => p.Status == "Pendente").ToList();
     }
 
-    private void BtnRecarregarPendencias_Click(object sender, RoutedEventArgs e) => CarregarPendencias();
+    private void BtnRecarregarPendencias_Click(object? sender, RoutedEventArgs e) => CarregarPendencias();
 
-    private void BtnIgnorarPendencia_Click(object sender, RoutedEventArgs e)
+    private void BtnIgnorarPendencia_Click(object? sender, RoutedEventArgs e)
     {
         if (GridPendencias.SelectedItem is not ArquivoPendente selecionada) return;
 
@@ -754,15 +802,16 @@ public partial class MainWindow : Window
     /// Ao escolher uma, a extensão do arquivo passa a integrar aquela regra e o arquivo é
     /// movido do temporário para a pasta de destino correspondente.
     /// </summary>
-    private void GridPendencias_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private void GridPendencias_DoubleTapped(object? sender, TappedEventArgs e)
     {
         if (GridPendencias.SelectedItem is not ArquivoPendente pendente) return;
 
-        var menu = new ContextMenu { PlacementTarget = GridPendencias };
+        var menu = new ContextMenu();
 
         foreach (var regra in _config.RegrasExtensao.Values.OrderBy(r => r.Destino))
         {
-            var item = new MenuItem { Header = $"{regra.Destino}  ({regra.Chave})" };
+            // "_" num menu vira atalho de teclado: dobrado, ele aparece como está (ex.: Documentos_Office).
+            var item = new MenuItem { Header = $"{regra.Destino}  ({regra.Chave})".Replace("_", "__") };
             item.Click += (_, _) => ResolverPendenciaComRegra(pendente, regra);
             menu.Items.Add(item);
         }
@@ -775,7 +824,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        menu.IsOpen = true;
+        menu.Open(GridPendencias);
     }
 
     private void ResolverPendenciaComRegra(ArquivoPendente pendente, RegraExtensao regra)
@@ -870,17 +919,17 @@ public partial class MainWindow : Window
     private void AtualizarEstadoVazioHistorico(int quantidade)
     {
         var vazio = quantidade == 0;
-        GridHistorico.Visibility = vazio ? Visibility.Collapsed : Visibility.Visible;
-        PainelVazioHistorico.Visibility = vazio ? Visibility.Visible : Visibility.Collapsed;
+        GridHistorico.IsVisible = !vazio;
+        PainelVazioHistorico.IsVisible = vazio;
     }
 
-    private void BtnRecarregarHistorico_Click(object sender, RoutedEventArgs e) => CarregarHistorico();
+    private void BtnRecarregarHistorico_Click(object? sender, RoutedEventArgs e) => CarregarHistorico();
 
     /// <summary>
     /// Duplo clique num backup: tenta abrir o CSV no aplicativo padrão; se não houver um
     /// associado (ou a abertura falhar), abre o Explorer com o arquivo já selecionado.
     /// </summary>
-    private void GridHistorico_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private void GridHistorico_DoubleTapped(object? sender, TappedEventArgs e)
     {
         if (GridHistorico.SelectedItem is not BackupExibicao selecionado) return;
 
@@ -934,11 +983,11 @@ public partial class MainWindow : Window
         AtualizarEstadoBotoesRecall();
     }
 
-    private void BtnRecarregarRecall_Click(object sender, RoutedEventArgs e) => CarregarRecall();
+    private void BtnRecarregarRecall_Click(object? sender, RoutedEventArgs e) => CarregarRecall();
 
     /// <summary>Filtra o Recall pelos itens de uma execução específica, a partir do backup CSV
     /// selecionado acima — a "revisão a partir do próprio CSV" pedida na reorganização.</summary>
-    private void BtnVerItensExecucao_Click(object sender, RoutedEventArgs e)
+    private void BtnVerItensExecucao_Click(object? sender, RoutedEventArgs e)
     {
         if (GridHistorico.SelectedItem is not BackupExibicao selecionado)
         {
@@ -951,7 +1000,7 @@ public partial class MainWindow : Window
         CarregarRecall();
     }
 
-    private void BtnLimparFiltroRecall_Click(object sender, RoutedEventArgs e)
+    private void BtnLimparFiltroRecall_Click(object? sender, RoutedEventArgs e)
     {
         _filtroExecucaoRecall = null;
         CarregarRecall();
@@ -1012,15 +1061,15 @@ public partial class MainWindow : Window
         }
     }
 
-    private void TreeRecall_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    private void TreeRecall_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (e.NewValue is not TreeViewItem no) return;
+        if (TreeRecall.SelectedItem is not TreeViewItem no) return;
 
         if (no.Tag is ItemRecallExibicao itemUnico)
         {
             GridRecall.ItemsSource = _todosItensRecall;
             GridRecall.SelectedItem = itemUnico;
-            GridRecall.ScrollIntoView(itemUnico);
+            GridRecall.ScrollIntoView(itemUnico, null);
         }
         else if (no.Tag is List<ItemRecallExibicao> itensDaPasta)
         {
@@ -1035,10 +1084,12 @@ public partial class MainWindow : Window
     /// de um item que já fazia parte de uma seleção múltipla existente mantém a seleção inteira,
     /// em vez de colapsar para um item só — igual ao comportamento do Explorer do Windows.
     /// </summary>
-    private void GridRecall_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    private void GridRecall_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        var linha = EncontrarAncestral<DataGridRow>(e.OriginalSource as DependencyObject);
-        if (linha?.Item is not ItemRecallExibicao itemClicado) return;
+        if (!e.GetCurrentPoint(GridRecall).Properties.IsRightButtonPressed) return;
+
+        var linha = (e.Source as Visual)?.FindAncestorOfType<DataGridRow>(includeSelf: true);
+        if (linha?.DataContext is not ItemRecallExibicao itemClicado) return;
 
         if (!GridRecall.SelectedItems.Contains(itemClicado))
             GridRecall.SelectedItem = itemClicado;
@@ -1047,7 +1098,7 @@ public partial class MainWindow : Window
         var elegiveisParaMarcar = selecionados.Where(i => i.Item.Status != "Restaurado" && !i.PendenteRestauro).ToList();
         var elegiveisParaDesmarcar = selecionados.Where(i => i.PendenteRestauro).ToList();
 
-        var menu = new ContextMenu { PlacementTarget = GridRecall };
+        var menu = new ContextMenu();
 
         if (elegiveisParaMarcar.Count > 0)
         {
@@ -1078,7 +1129,7 @@ public partial class MainWindow : Window
         if (menu.Items.Count == 0)
             menu.Items.Add(new MenuItem { Header = "Já foi devolvido ao local de origem", IsEnabled = false });
 
-        menu.IsOpen = true;
+        menu.Open(GridRecall);
         e.Handled = true;
     }
 
@@ -1106,7 +1157,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Confirma todas as devoluções marcadas: move os arquivos de fato e recarrega do disco.</summary>
-    private async void BtnSalvarRecall_Click(object sender, RoutedEventArgs e)
+    private async void BtnSalvarRecall_Click(object? sender, RoutedEventArgs e)
     {
         if (_pilhaPendentesRecall.Count == 0) return;
 
@@ -1136,7 +1187,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Desfaz só a última marcação (a mais recente), como um Ctrl+Z de um passo.</summary>
-    private void BtnDesfazerRecall_Click(object sender, RoutedEventArgs e)
+    private void BtnDesfazerRecall_Click(object? sender, RoutedEventArgs e)
     {
         if (_pilhaPendentesRecall.Count == 0) return;
 
@@ -1147,7 +1198,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Descarta todas as marcações pendentes de uma vez, sem mover nenhum arquivo.</summary>
-    private void BtnCancelarRecall_Click(object sender, RoutedEventArgs e)
+    private void BtnCancelarRecall_Click(object? sender, RoutedEventArgs e)
     {
         foreach (var item in _pilhaPendentesRecall)
             item.PendenteRestauro = false;
@@ -1217,41 +1268,48 @@ public partial class MainWindow : Window
         BtnDeletarEnviarNuvem.IsEnabled = _itensParaExcluir.Count > 0;
 
         var vazio = _itensParaExcluir.Count == 0;
-        GridDeletar.Visibility = vazio ? Visibility.Collapsed : Visibility.Visible;
-        PainelVazioDeletar.Visibility = vazio ? Visibility.Visible : Visibility.Collapsed;
+        GridDeletar.IsVisible = !vazio;
+        PainelVazioDeletar.IsVisible = vazio;
     }
 
     /// <summary>
     /// Zona de arraste real (item 2 do refinamento visual): arrastar arquivos/pastas do Explorer
     /// pra cima do estado vazio já adiciona à lista, sem precisar passar pelos botões.
     /// </summary>
-    private void PainelVazioDeletar_DragEnter(object sender, DragEventArgs e)
+    private void PainelVazioDeletar_DragEnter(object? sender, DragEventArgs e)
     {
-        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        if (e.DataTransfer.Contains(DataFormat.File))
         {
-            e.Effects = DragDropEffects.Copy;
-            RetanguloTracejadoDeletar.Stroke = (System.Windows.Media.Brush)FindResource("AccentBrush");
+            e.DragEffects = DragDropEffects.Copy;
+            if (this.FindResource("AccentBrush") is IBrush destaque)
+                RetanguloTracejadoDeletar.Stroke = destaque;
         }
         else
         {
-            e.Effects = DragDropEffects.None;
+            e.DragEffects = DragDropEffects.None;
         }
 
         e.Handled = true;
     }
 
-    private void PainelVazioDeletar_DragLeave(object sender, DragEventArgs e)
+    private void PainelVazioDeletar_DragLeave(object? sender, DragEventArgs e)
     {
-        RetanguloTracejadoDeletar.Stroke = (System.Windows.Media.Brush)FindResource("BorderStrongBrush");
+        if (this.FindResource("BorderStrongBrush") is IBrush borda)
+            RetanguloTracejadoDeletar.Stroke = borda;
     }
 
-    private void PainelVazioDeletar_Drop(object sender, DragEventArgs e)
+    private void PainelVazioDeletar_Drop(object? sender, DragEventArgs e)
     {
-        RetanguloTracejadoDeletar.Stroke = (System.Windows.Media.Brush)FindResource("BorderStrongBrush");
+        PainelVazioDeletar_DragLeave(sender, e);
 
-        if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+        if (!e.DataTransfer.Contains(DataFormat.File)) return;
 
-        var caminhos = (string[])e.Data.GetData(DataFormats.FileDrop)!;
+        var caminhos = (e.DataTransfer.TryGetFiles() ?? Array.Empty<IStorageItem>())
+            .Select(i => i.TryGetLocalPath())
+            .Where(c => !string.IsNullOrEmpty(c))
+            .Cast<string>()
+            .ToArray();
+
         foreach (var caminho in caminhos)
         {
             if (_itensParaExcluir.Any(i => i.Caminho.Equals(caminho, StringComparison.OrdinalIgnoreCase))) continue;
@@ -1271,12 +1329,16 @@ public partial class MainWindow : Window
         AtualizarGridDeletar();
     }
 
-    private void BtnDeletarAdicionarArquivos_Click(object sender, RoutedEventArgs e)
+    private async void BtnDeletarAdicionarArquivos_Click(object? sender, RoutedEventArgs e)
     {
-        var dialogo = new OpenFileDialog { Title = "Selecionar arquivos para excluir", Multiselect = true };
-        if (dialogo.ShowDialog() != true) return;
+        var arquivos = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Selecionar arquivos para excluir",
+            AllowMultiple = true
+        });
+        if (arquivos.Count == 0) return;
 
-        foreach (var caminho in dialogo.FileNames)
+        foreach (var caminho in arquivos.Select(a => a.TryGetLocalPath()).OfType<string>())
         {
             if (_itensParaExcluir.Any(i => i.Caminho.Equals(caminho, StringComparison.OrdinalIgnoreCase))) continue;
             _itensParaExcluir.Add(new ItemParaExcluir(Path.GetFileName(caminho), caminho, "Arquivo"));
@@ -1285,12 +1347,12 @@ public partial class MainWindow : Window
         AtualizarGridDeletar();
     }
 
-    private void BtnDeletarAdicionarPasta_Click(object sender, RoutedEventArgs e)
+    private async void BtnDeletarAdicionarPasta_Click(object? sender, RoutedEventArgs e)
     {
-        var dialogo = new OpenFolderDialog { Title = "Selecionar pasta para excluir" };
-        if (dialogo.ShowDialog() != true) return;
+        var pastaEscolhida = await EscolherPastaAsync("Selecionar pasta para excluir");
+        if (pastaEscolhida is null) return;
 
-        var caminho = dialogo.FolderName.TrimEnd(Path.DirectorySeparatorChar);
+        var caminho = pastaEscolhida.TrimEnd(Path.DirectorySeparatorChar);
         if (_itensParaExcluir.Any(i => i.Caminho.Equals(caminho, StringComparison.OrdinalIgnoreCase)))
         {
             AtualizarGridDeletar();
@@ -1302,7 +1364,7 @@ public partial class MainWindow : Window
         AtualizarGridDeletar();
     }
 
-    private void BtnDeletarRemoverDaLista_Click(object sender, RoutedEventArgs e)
+    private void BtnDeletarRemoverDaLista_Click(object? sender, RoutedEventArgs e)
     {
         foreach (var item in GridDeletar.SelectedItems.Cast<ItemParaExcluir>().ToList())
             _itensParaExcluir.Remove(item);
@@ -1315,7 +1377,7 @@ public partial class MainWindow : Window
     /// Organizar/Limpar, isto NUNCA roda automaticamente — é sempre um clique explícito do
     /// usuário, dado que é irreversível e não passa pelo Recall.
     /// </summary>
-    private void BtnExcluirDefinitivamente_Click(object sender, RoutedEventArgs e)
+    private void BtnExcluirDefinitivamente_Click(object? sender, RoutedEventArgs e)
     {
         if (_itensParaExcluir.Count == 0) return;
 
@@ -1474,7 +1536,7 @@ public partial class MainWindow : Window
             $"{resultado.Deletados.Count} arquivo(s) enviados e removidos localmente.");
     }
 
-    private async void BtnDeletarEnviarNuvem_Click(object sender, RoutedEventArgs e)
+    private async void BtnDeletarEnviarNuvem_Click(object? sender, RoutedEventArgs e)
     {
         if (_itensParaExcluir.Count == 0) return;
 
@@ -1522,7 +1584,7 @@ public partial class MainWindow : Window
         TxtAgenteExecucoesPorDia.Text = _config.AgenteExecucoesPorDia.ToString();
     }
 
-    private void BtnSalvarConfigAgente_Click(object sender, RoutedEventArgs e)
+    private void BtnSalvarConfigAgente_Click(object? sender, RoutedEventArgs e)
     {
         if (!int.TryParse(TxtAgenteDiasTemporario.Text, out var diasTemp) || diasTemp <= 0 ||
             !int.TryParse(TxtAgenteDiasGrande.Text, out var diasGrande) || diasGrande <= 0 ||
@@ -1566,17 +1628,17 @@ public partial class MainWindow : Window
         BtnSugestoesEnviarNuvem.IsEnabled = BtnExcluirAprovadas.IsEnabled;
 
         var vazio = itens.Count == 0;
-        GridSugestoes.Visibility = vazio ? Visibility.Collapsed : Visibility.Visible;
-        PainelVazioSugestoes.Visibility = vazio ? Visibility.Visible : Visibility.Collapsed;
+        GridSugestoes.IsVisible = !vazio;
+        PainelVazioSugestoes.IsVisible = vazio;
     }
 
     /// <summary>Chamado pelo App (via AgenteScheduler.AnaliseFinalizada) quando uma análise em
     /// segundo plano termina — só recarrega a grid se a janela já estiver aberta.</summary>
     public void AtualizarSugestoesAposAnaliseExterna() => CarregarSugestoes();
 
-    private void BtnRecarregarSugestoes_Click(object sender, RoutedEventArgs e) => CarregarSugestoes();
+    private void BtnRecarregarSugestoes_Click(object? sender, RoutedEventArgs e) => CarregarSugestoes();
 
-    private async void BtnAnalisarAgora_Click(object sender, RoutedEventArgs e)
+    private async void BtnAnalisarAgora_Click(object? sender, RoutedEventArgs e)
     {
         BtnAnalisarAgora.IsEnabled = false;
         BtnAnalisarAgora.Content = "Analisando...";
@@ -1602,7 +1664,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void BtnAprovarSugestoes_Click(object sender, RoutedEventArgs e)
+    private void BtnAprovarSugestoes_Click(object? sender, RoutedEventArgs e)
     {
         foreach (var item in GridSugestoes.SelectedItems.Cast<SugestaoExibicao>().ToList())
             _sugestaoService.AtualizarStatus(_config.ArquivoSugestoes, item.Sugestao.Id, "Aprovado");
@@ -1610,7 +1672,7 @@ public partial class MainWindow : Window
         CarregarSugestoes();
     }
 
-    private void BtnIgnorarSugestoes_Click(object sender, RoutedEventArgs e)
+    private void BtnIgnorarSugestoes_Click(object? sender, RoutedEventArgs e)
     {
         foreach (var item in GridSugestoes.SelectedItems.Cast<SugestaoExibicao>().ToList())
             _sugestaoService.AtualizarStatus(_config.ArquivoSugestoes, item.Sugestao.Id, "Ignorado");
@@ -1620,7 +1682,7 @@ public partial class MainWindow : Window
 
     /// <summary>Exclusão definitiva dos itens aprovados — mesma filosofia do módulo Deletar:
     /// confirmação explícita, backup CSV antes, nunca automático.</summary>
-    private void BtnExcluirAprovadas_Click(object sender, RoutedEventArgs e)
+    private void BtnExcluirAprovadas_Click(object? sender, RoutedEventArgs e)
     {
         var aprovadas = _sugestoesExibicao.Where(i => i.Sugestao.Status == "Aprovado").ToList();
         if (aprovadas.Count == 0) return;
@@ -1711,7 +1773,7 @@ public partial class MainWindow : Window
         };
     }
 
-    private async void BtnSugestoesEnviarNuvem_Click(object sender, RoutedEventArgs e)
+    private async void BtnSugestoesEnviarNuvem_Click(object? sender, RoutedEventArgs e)
     {
         var aprovadas = _sugestoesExibicao.Where(i => i.Sugestao.Status == "Aprovado").ToList();
         if (aprovadas.Count == 0) return;
@@ -1750,18 +1812,26 @@ public partial class MainWindow : Window
         ListaCubos.ItemsSource = pacotes.Select(p => new CuboExibicao(p, maiorTamanho)).ToList();
 
         var vazio = pacotes.Count == 0;
-        ScrollCubos.Visibility = vazio ? Visibility.Collapsed : Visibility.Visible;
-        PainelVazioCubos.Visibility = vazio ? Visibility.Visible : Visibility.Collapsed;
+        ScrollCubos.IsVisible = !vazio;
+        PainelVazioCubos.IsVisible = vazio;
     }
 
-    private void BtnRecarregarCubos_Click(object sender, RoutedEventArgs e) => CarregarCubos();
+    private void BtnRecarregarCubos_Click(object? sender, RoutedEventArgs e) => CarregarCubos();
 
-    private void Cubo_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private async void Cubo_PointerReleased(object? sender, PointerReleasedEventArgs e)
     {
-        if (sender is not FrameworkElement elemento || elemento.DataContext is not CuboExibicao cubo) return;
+        if (e.InitialPressMouseButton != MouseButton.Left) return;
+        if ((e.Source as Control)?.DataContext is not CuboExibicao cubo) return;
 
-        var janela = new DetalhesPacoteWindow(cubo.Pacote, _googleDriveService) { Owner = this };
-        janela.ShowDialog();
+        var janela = new DetalhesPacoteWindow(cubo.Pacote, _googleDriveService);
+        await janela.ShowDialog(this);
+    }
+
+    /// <summary>Escolhe uma pasta no seletor do sistema. Devolve null se o usuário cancelar.</summary>
+    private async Task<string?> EscolherPastaAsync(string titulo)
+    {
+        var pastas = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = titulo });
+        return pastas.Count > 0 ? pastas[0].TryGetLocalPath() : null;
     }
 
     private class CuboExibicao
