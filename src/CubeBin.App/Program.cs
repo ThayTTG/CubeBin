@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Avalonia;
+using Comum.Interop;
 using NokyLabs.UI;
 
 namespace CubeBin.App;
@@ -45,9 +46,14 @@ internal static class Program
         try
         {
             if (OperatingSystem.IsWindows())
+            {
                 MessageBoxW(IntPtr.Zero, mensagem, titulo, 0x10 /* MB_ICONERROR */);
-            else
-                Console.Error.WriteLine($"{titulo}: {mensagem}");
+                return;
+            }
+
+            Console.Error.WriteLine($"{titulo}: {mensagem}");
+            if (OperatingSystem.IsLinux())
+                AvisoDeErroLinux.Mostrar("CubeBin", titulo, mensagem);
         }
         catch
         {

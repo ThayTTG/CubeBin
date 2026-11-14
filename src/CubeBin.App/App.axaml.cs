@@ -95,11 +95,11 @@ public partial class App : Application
         _configService = new ConfigService(Path.Combine(PastaDados, "config.json"));
         var config = _configService.CarregarOuCriarPadrao();
 
-        // Sincroniza o registro do Windows com o que está salvo no config.json — cobre o caso de
-        // alguém ter removido a entrada manualmente fora do app.
+        // Sincroniza o início automático (registro do Windows / autostart do Linux) com o que está
+        // salvo no config.json — cobre o caso de alguém ter removido a entrada manualmente fora do app.
         SincronizarInicializacaoComWindows(config);
 
-        _notificationService = new ToastNotificationService();
+        _notificationService = CriarServicoDeNotificacao();
         _googleDriveService = new GoogleDriveService(config.PastaCredenciaisGoogleDrive);
 
         // Se as credenciais embutidas já estiverem preenchidas e já houve uma conexão bem-sucedida
@@ -137,10 +137,20 @@ public partial class App : Application
         _agenteScheduler?.AnalisarAgora();
     }
 
+    /// <summary>Toasts nativos no Windows; no Linux, janela de contagem + notify-send.</summary>
+    private static INotificationService CriarServicoDeNotificacao()
+    {
+#if WINDOWS
+        return new ToastNotificationService();
+#else
+        return new LinuxNotificationService();
+#endif
+    }
+
     private void SincronizarInicializacaoComWindows(AppConfig config)
     {
-        // O registro do Windows só existe no Windows (fora dele o app roda só para testar a tela).
-        if (!OperatingSystem.IsWindows()) return;
+        // Windows: registro (HKCU\...\Run). Linux: ~/.config/autostart. Em outros sistemas, nada.
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux()) return;
 
         var caminhoExecutavel = Environment.ProcessPath;
         if (string.IsNullOrEmpty(caminhoExecutavel)) return;

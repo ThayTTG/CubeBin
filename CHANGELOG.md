@@ -12,6 +12,11 @@ Tudo o que muda no CubeBin, versão por versão. O texto de cada versão vira as
 - No menu do ícone perto do relógio, "Organizar agora" virou **Procurar o que limpar**: roda o agente na hora e abre as Sugestões.
 - Os registros em CSV do que foi apagado agora ficam numa pasta só deles ("registros"), separados do histórico da organização.
 
+## [2.1.0] - 2026-11-14
+- **Versão para Linux** (x64), também pelo NokyLabs Launcher. Organiza no horário certo quando você está longe do computador (GNOME, KDE e sessões X11), abre junto com o sistema, guarda o login do Google Drive no chaveiro do sistema e avisa antes de organizar, com uma janelinha e o botão **Cancelar**.
+- No Linux, arquivos ocultos e downloads que ainda estão baixando (`.part`, `.crdownload`) não são mexidos, e os instaladores do Linux (`.deb`, `.rpm`, `.appimage`...) vão para **Instaladores**.
+- No Windows, tudo continua igual.
+
 ## [2.0.0] - 2026-11-09
 - Motor gráfico novo (Avalonia), no padrão de todos os apps da NokyLabs: o mesmo visual e as mesmas animações do launcher, do ValReport e do YT-DLP GUI, no vermelho do CubeBin. Tudo continua funcionando do mesmo jeito.
 - No canto do menu lateral: "Idealizado e aprovado por Thayna Dias" e "Desenvolvido com IA (Claude, da Anthropic)". A tela **Sobre** ganhou os créditos de quem fez e das ferramentas usadas.

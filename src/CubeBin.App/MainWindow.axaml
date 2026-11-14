@@ -490,7 +490,7 @@
           <Border Classes="card" MaxWidth="660" HorizontalAlignment="Left" Padding="24">
             <StackPanel Spacing="8">
               <TextBlock Classes="caps" Text="FEITO COM" />
-              <TextBlock Classes="secondary"
+              <TextBlock x:Name="TxtFeitoCom" Classes="secondary"
                          Text="Avalonia UI (a tela) · Google APIs para .NET (o backup no Google Drive) · Windows Community Toolkit (as notificações) · fonte Inter, de Rasmus Andersson. Todos livres, com o crédito às suas comunidades." />
             </StackPanel>
           </Border>

@@ -1,6 +1,6 @@
 # CubeBin (e o organizador da NokyLabs)
 
-Este repositório guarda **dois apps** da NokyLabs para Windows (C#/.NET 8, interface em Avalonia com
+Este repositório guarda **dois apps** da NokyLabs para Windows e Linux (C#/.NET 8, interface em Avalonia com
 o Kit NokyLabs), que até a versão 2.x eram um app só:
 
 - **CubeBin** (3.x) — liberar espaço sem perder nada. **Sugestões** (um agente opcional, desligado
@@ -106,6 +106,37 @@ CubeBin 3.0 antes do organizador estar publicado também**, senão quem atualiza
 Observação sobre "Iniciar com o Windows": quando o app roda via `dotnet run`, `Environment.ProcessPath`
 aponta para `dotnet.exe`. Para testar essa opção, use o `.exe` compilado ou publicado. Cada app se
 registra com o seu nome (`CubeBin` e `NokyLabs Organizador`), então um não desliga o outro.
+
+## Versão Linux
+
+O mesmo código gera a versão Linux (x64) dos dois apps. O alvo é escolhido pelo `-r`: com
+`-r linux-x64` os apps compilam em `net8.0` puro, sem os toasts do Windows. Dá para publicar a
+partir do próprio Windows:
+
+```
+dotnet publish src/CubeBin.App/CubeBin.App.csproj -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish-linux
+dotnet publish src/Organizador.App/Organizador.App.csproj -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish-linux-organizador
+```
+
+Cada pasta fica com o executável (`CubeBin` ou `Organizador`) e o `icon.png`, que o NokyLabs
+Launcher usa no atalho. No lançamento, o GitHub Actions gera o `CubeBin-linux-x64.zip` junto do
+pacote Windows (o organizador ainda não tem lançamento próprio).
+
+O que muda no Linux:
+
+| Recurso | Windows | Linux |
+|---|---|---|
+| Saber se o usuário está ausente | `GetLastInputInfo` | D-Bus do GNOME (Mutter) ou do KDE, ou XScreenSaver no X11. Sem nenhum deles (Sway, Hyprland), organiza no horário agendado, sempre com o aviso de cancelamento antes. |
+| Abrir junto com o sistema | Registro (`HKCU\...\Run`) | `~/.config/autostart/<app>.desktop` (ex.: `cubebin.desktop`, `nokylabs-organizador.desktop`) |
+| Token do Google Drive (CubeBin) | DPAPI | Chaveiro do sistema (`secret-tool`/libsecret); sem chaveiro, arquivo com permissão 600 |
+| Aviso antes de organizar (Organizador) | Toast com "Cancelar" | Janelinha com contagem regressiva e "Cancelar" |
+| Resumo e avisos | Toast | `notify-send` (libnotify) |
+| Pasta Downloads | Known Folders | `~/.config/user-dirs.dirs` (ex.: `~/Transferências`) |
+| Ícone perto do relógio | Bandeja do Windows | StatusNotifierItem. No GNOME precisa da extensão "AppIndicator". |
+
+No Linux, o organizador também ignora arquivos ocultos (nome começando com ponto) e downloads em
+andamento (`.part`, `.crdownload`), e a regra padrão "Instaladores" inclui `.deb`, `.rpm`,
+`.appimage`, `.flatpakref`, `.run` e `.sh`.
 
 ## Configurar a integração com o Google Drive (necessário antes de usar)
 

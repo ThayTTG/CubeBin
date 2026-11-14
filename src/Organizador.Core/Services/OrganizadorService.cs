@@ -246,12 +246,24 @@ public class OrganizadorService
     /// Identifica arquivos de metadados do próprio Windows (não são "arquivos do usuário") que
     /// nunca devem ser organizados — movê-los quebraria customizações da pasta de origem (ícone,
     /// modo de exibição, miniaturas em cache).
+    /// No Linux, o equivalente: arquivos ocultos (nome começando com ponto, como o .directory do
+    /// KDE) e downloads ainda em andamento (.part do Firefox, .crdownload do Chrome).
     /// </summary>
     private static bool DeveIgnorarArquivoDeSistema(FileInfo arquivo)
     {
         if ((arquivo.Attributes & FileAttributes.System) != 0) return true;
         if (arquivo.Name.Equals("desktop.ini", StringComparison.OrdinalIgnoreCase)) return true;
         if (arquivo.Name.Equals("thumbs.db", StringComparison.OrdinalIgnoreCase)) return true;
+        if (OperatingSystem.IsLinux() && EhArquivoDeSistemaNoLinux(arquivo.Name)) return true;
+        return false;
+    }
+
+    /// <summary>Regra do Linux, separada para poder ser testada em qualquer sistema.</summary>
+    public static bool EhArquivoDeSistemaNoLinux(string nomeArquivo)
+    {
+        if (nomeArquivo.StartsWith('.')) return true;
+        if (nomeArquivo.EndsWith(".part", StringComparison.OrdinalIgnoreCase)) return true;
+        if (nomeArquivo.EndsWith(".crdownload", StringComparison.OrdinalIgnoreCase)) return true;
         return false;
     }
 }

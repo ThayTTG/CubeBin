@@ -62,6 +62,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         TemaJanelaEscura.Aplicar(this);
+        AjustarTextosDoSistema();
         _configService = configService;
         _notificationService = notificationService;
         _inicializacaoService = inicializacaoService;
@@ -275,8 +276,8 @@ public partial class MainWindow : Window
     /// </summary>
     private void AtualizarInicializacaoComWindows()
     {
-        // O registro do Windows só existe no Windows (fora dele o app roda só para testar a tela).
-        if (!OperatingSystem.IsWindows()) return;
+        // Windows: registro (HKCU\...\Run). Linux: ~/.config/autostart. Em outros sistemas, nada.
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux()) return;
 
         var caminhoExecutavel = Environment.ProcessPath;
         if (string.IsNullOrEmpty(caminhoExecutavel)) return;
@@ -285,6 +286,20 @@ public partial class MainWindow : Window
             _inicializacaoService.Habilitar(caminhoExecutavel);
         else
             _inicializacaoService.Desabilitar();
+    }
+
+    /// <summary>
+    /// Os textos da tela citam o Windows; fora dele, troca pelos equivalentes. No Windows a tela
+    /// fica exatamente como sempre foi.
+    /// </summary>
+    private void AjustarTextosDoSistema()
+    {
+        if (OperatingSystem.IsWindows()) return;
+
+        ChkIniciarComWindows.Content = "Abrir o CubeBin ao entrar no sistema";
+        TxtFeitoCom.Text = "Avalonia UI (a tela) · Google APIs para .NET (o backup no Google Drive) · " +
+                           "libnotify (as notificações) · fonte Inter, de Rasmus Andersson. Todos livres, " +
+                           "com o crédito às suas comunidades.";
     }
 
     // ===================== LOGIN (Google Drive) =====================

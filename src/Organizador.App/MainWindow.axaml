@@ -162,7 +162,7 @@
       <DockPanel x:Name="PaginaPastas" Margin="32,28,32,24" IsVisible="False">
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,18">
           <TextBlock Text="Pastas" Classes="titulo" />
-          <TextBlock Classes="descricao"
+          <TextBlock x:Name="TxtDescricaoPastas" Classes="descricao"
                      Text="As pastas que são organizadas. As pastas do Windows podem ser zeradas e restauradas, mas nunca tiradas da lista; as suas podem ser adicionadas e removidas à vontade." />
         </StackPanel>
         <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
@@ -427,7 +427,7 @@
           <Border Classes="card" MaxWidth="660" HorizontalAlignment="Left" Padding="24">
             <StackPanel Spacing="8">
               <TextBlock Classes="caps" Text="FEITO COM" />
-              <TextBlock Classes="secondary"
+              <TextBlock x:Name="TxtFeitoCom" Classes="secondary"
                          Text="Avalonia UI (a tela) · Windows Community Toolkit (as notificações) · fonte Inter, de Rasmus Andersson. Todos livres, com o crédito às suas comunidades." />
             </StackPanel>
           </Border>

@@ -307,6 +307,18 @@ public class ConfigService
         config.PastasPersonalizadas.Add(pasta);
     }
 
+    /// <summary>
+    /// Extensões da regra padrão "Instaladores". No Linux entram também os pacotes do sistema
+    /// (.deb, .rpm, .AppImage, .flatpakref) e instaladores em script; no Windows fica como sempre foi.
+    /// </summary>
+    public static List<string> ExtensoesInstaladores()
+    {
+        var extensoes = new List<string> { ".exe", ".msi", ".bat" };
+        if (OperatingSystem.IsLinux())
+            extensoes.AddRange(new[] { ".deb", ".rpm", ".appimage", ".flatpakref", ".run", ".sh" });
+        return extensoes;
+    }
+
     private AppConfig CriarConfigPadrao()
     {
         var baseApp = _pastaDados;
@@ -327,7 +339,7 @@ public class ConfigService
             RegrasExtensao = new Dictionary<string, RegraExtensao>
             {
                 ["compactados"] = new() { Chave = "compactados", Extensoes = new() { ".zip", ".rar", ".7z" }, Destino = "Compactados" },
-                ["executaveis"] = new() { Chave = "executaveis", Extensoes = new() { ".exe", ".msi", ".bat" }, Destino = "Instaladores" },
+                ["executaveis"] = new() { Chave = "executaveis", Extensoes = ExtensoesInstaladores(), Destino = "Instaladores" },
                 ["imagens"] = new() { Chave = "imagens", Extensoes = new() { ".jpg", ".jpeg", ".png", ".gif", ".webp" }, Destino = "Imagens" },
                 ["documentos_office"] = new() { Chave = "documentos_office", Extensoes = new() { ".pdf", ".docx", ".xlsx", ".pptx" }, Destino = "Documentos_Office" },
                 ["videos"] = new() { Chave = "videos", Extensoes = new() { ".mp4", ".mkv", ".avi" }, Destino = "Vídeos" },

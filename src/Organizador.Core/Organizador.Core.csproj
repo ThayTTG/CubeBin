@@ -6,8 +6,9 @@
     Só move arquivos dentro do computador: não fala com a nuvem nem apaga nada.
   -->
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <!-- net8.0 puro: serve ao Windows e ao Linux. O que é só do Windows fica atrás de
+         OperatingSystem.IsWindows(). -->
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Organizador.Core</RootNamespace>

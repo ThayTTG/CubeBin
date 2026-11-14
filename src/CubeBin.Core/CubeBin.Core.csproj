@@ -6,8 +6,9 @@
     Drive (os Cubos). A organização de arquivos virou um app à parte (src/Organizador.*).
   -->
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <!-- net8.0 puro: o mesmo Core serve ao Windows e ao Linux. O que é só do Windows (registro,
+         DPAPI, Known Folders, GetLastInputInfo) fica atrás de OperatingSystem.IsWindows(). -->
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>CubeBin.Core</RootNamespace>

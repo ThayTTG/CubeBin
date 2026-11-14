@@ -74,6 +74,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         TemaJanelaEscura.Aplicar(this);
+        AjustarTextosDoSistema();
         _configService = configService;
         _notificationService = notificationService;
         _organizadorService = organizadorService;
@@ -641,8 +642,8 @@ public partial class MainWindow : Window
     /// </summary>
     private void AtualizarInicializacaoComWindows()
     {
-        // O registro do Windows só existe no Windows (fora dele o app roda só para testar a tela).
-        if (!OperatingSystem.IsWindows()) return;
+        // Windows: registro (HKCU\...\Run). Linux: ~/.config/autostart. Em outros sistemas, nada.
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux()) return;
 
         var caminhoExecutavel = Environment.ProcessPath;
         if (string.IsNullOrEmpty(caminhoExecutavel)) return;
@@ -841,11 +842,42 @@ public partial class MainWindow : Window
         }
         catch
         {
-            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{caminhoCompleto}\"") { UseShellExecute = true });
+            // Sem programa associado ao .csv: mostra o arquivo na pasta.
+            if (OperatingSystem.IsWindows())
+                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{caminhoCompleto}\"") { UseShellExecute = true });
+            else
+                Comum.Interop.ComandoExterno.Abrir("xdg-open", Path.GetDirectoryName(caminhoCompleto) ?? caminhoCompleto);
         }
     }
 
     private record BackupExibicao(string Nome, DateTime CriadoEm, long TamanhoKb);
+
+    /// <summary>
+    /// Os textos da tela citam o Windows; fora dele, troca pelos equivalentes. No Windows a tela
+    /// fica exatamente como sempre foi.
+    /// </summary>
+    private void AjustarTextosDoSistema()
+    {
+        if (OperatingSystem.IsWindows()) return;
+
+        ChkIniciarComWindows.Content = "Abrir ao entrar no sistema";
+        TxtDescricaoPastas.Text = "As pastas que são organizadas. As pastas padrão do sistema podem ser zeradas e " +
+                                  "restauradas, mas nunca tiradas da lista; as suas podem ser adicionadas e removidas à vontade.";
+        TxtFeitoCom.Text = "Avalonia UI (a tela) · libnotify (as notificações) · fonte Inter, de Rasmus Andersson. " +
+                           "Todos livres, com o crédito às suas comunidades.";
+    }
+
+    /// <summary>
+    /// As subpastas entre a pasta monitorada e o arquivo, para montar a árvore do Recall.
+    /// Ex.: pasta "C:\Downloads", diretório "C:\Downloads\Imagens\2024" → ["Imagens", "2024"].
+    /// Usa o separador do sistema (\ no Windows, / no Linux).
+    /// </summary>
+    public static string[] SegmentosAbaixoDaPasta(string caminhoPasta, string diretorioArquivo)
+    {
+        var relativo = diretorioArquivo[Math.Min(caminhoPasta.Length, diretorioArquivo.Length)..];
+        return relativo.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+            StringSplitOptions.RemoveEmptyEntries);
+    }
 
     // ===================== RECALL (absorvido pela aba Histórico) =====================
 
@@ -925,9 +957,9 @@ public partial class MainWindow : Window
 
             var nomeRaiz = pastaCorrespondente?.Nome ?? "Outros locais";
             var diretorioArquivo = Path.GetDirectoryName(item.CaminhoAtual) ?? "";
-            var relativo = pastaCorrespondente is not null
-                ? diretorioArquivo[Math.Min(pastaCorrespondente.Caminho.Length, diretorioArquivo.Length)..].Trim('\\')
-                : "";
+            var segmentos = pastaCorrespondente is not null
+                ? SegmentosAbaixoDaPasta(pastaCorrespondente.Caminho, diretorioArquivo)
+                : Array.Empty<string>();
 
             var chaveAcumulada = nomeRaiz;
             if (!nos.TryGetValue(chaveAcumulada, out var noAtual))
@@ -938,9 +970,9 @@ public partial class MainWindow : Window
             }
             ((List<ItemRecallExibicao>)noAtual.Tag!).Add(item);
 
-            foreach (var segmento in relativo.Split('\\', StringSplitOptions.RemoveEmptyEntries))
+            foreach (var segmento in segmentos)
             {
-                chaveAcumulada += "\\" + segmento;
+                chaveAcumulada += Path.DirectorySeparatorChar + segmento;
                 if (!nos.TryGetValue(chaveAcumulada, out var noFilho))
                 {
                     noFilho = new TreeViewItem { Header = segmento, Tag = new List<ItemRecallExibicao>() };

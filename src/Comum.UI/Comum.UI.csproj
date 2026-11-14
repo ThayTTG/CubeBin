@@ -6,9 +6,9 @@
     bandeja e os ícones/estilos (Recursos.axaml e Estilos.axaml).
   -->
   <PropertyGroup>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
-    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
-    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <!-- net8.0 puro: serve ao Windows e ao Linux. O que é só do Windows fica atrás de
+         OperatingSystem.IsWindows(). -->
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Comum.UI</RootNamespace>

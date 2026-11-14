@@ -48,8 +48,18 @@ public class TrayIconManager : IDisposable
     }
 
     /// <summary>Carrega o ícone embutido no programa (o app.ico como recurso do Avalonia).
-    /// Ex.: CarregarIcone("avares://CubeBin/app.ico"). Devolve null se não achar.</summary>
+    /// Ex.: CarregarIcone("avares://CubeBin/app.ico"). Devolve null se não achar.
+    /// No Linux a bandeja trabalha com PNG: quando o app tem um icon.png ao lado do app.ico
+    /// (também como recurso), é ele que vai para a bandeja.</summary>
     public static WindowIcon? CarregarIcone(string endereco)
+    {
+        if (!OperatingSystem.IsWindows() && endereco.EndsWith("/app.ico", StringComparison.OrdinalIgnoreCase))
+            return Abrir(endereco[..^"app.ico".Length] + "icon.png") ?? Abrir(endereco);
+
+        return Abrir(endereco);
+    }
+
+    private static WindowIcon? Abrir(string endereco)
     {
         try
         {
