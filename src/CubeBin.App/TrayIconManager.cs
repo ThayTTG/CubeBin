@@ -42,12 +42,16 @@ public class TrayIconManager : IDisposable
         TrayIcon.SetIcons(app, new TrayIcons { _trayIcon });
     }
 
-    /// <summary>O ícone vai embutido no próprio programa (app.ico como recurso do Avalonia).</summary>
+    /// <summary>
+    /// O ícone vai embutido no próprio programa (recurso do Avalonia): app.ico no Windows,
+    /// icon.png no Linux (a bandeja de lá trabalha com imagens PNG).
+    /// </summary>
     private static WindowIcon? ObterIconeDoApp()
     {
         try
         {
-            using var arquivo = AssetLoader.Open(new Uri("avares://CubeBin/app.ico"));
+            var recurso = OperatingSystem.IsWindows() ? "avares://CubeBin/app.ico" : "avares://CubeBin/icon.png";
+            using var arquivo = AssetLoader.Open(new Uri(recurso));
             return new WindowIcon(arquivo);
         }
         catch (Exception)

@@ -68,6 +68,15 @@
   <ItemGroup>
     <!-- O ícone vai dentro do programa (janela e bandeja). -->
     <AvaloniaResource Include="app.ico" />
+    <!-- No Linux a bandeja usa o PNG (o padrão do StatusNotifierItem). -->
+    <AvaloniaResource Include="icon.png" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(AlvoLinux)' == 'true'">
+    <!-- icon.png solto ao lado do executável: o NokyLabs Launcher usa no atalho (.desktop),
+         e o próprio app usa no autostart e nas notificações. -->
+    <None Include="icon.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
+          ExcludeFromSingleFile="true" />
   </ItemGroup>
 
 </Project>
