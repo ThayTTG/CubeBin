@@ -5,6 +5,8 @@ Tudo o que muda no CubeBin, versão por versão. O texto de cada versão vira as
 **Como usar:** anote as mudanças em `## [Não lançado]` enquanto trabalha. Na hora de lançar, é só aumentar o `<Version>` no `.csproj` e enviar para o branch `release`: o lançamento usa essa seção e ela vira a seção da versão sozinha.
 
 ## [Não lançado]
+
+## [2.1.0] - 2026-11-14
 - **Versão para Linux** (x64), também pelo NokyLabs Launcher. Organiza no horário certo quando você está longe do computador (GNOME, KDE e sessões X11), abre junto com o sistema, guarda o login do Google Drive no chaveiro do sistema e avisa antes de organizar, com uma janelinha e o botão **Cancelar**.
 - No Linux, arquivos ocultos e downloads que ainda estão baixando (`.part`, `.crdownload`) não são mexidos, e os instaladores do Linux (`.deb`, `.rpm`, `.appimage`...) vão para **Instaladores**.
 - No Windows, tudo continua igual.
