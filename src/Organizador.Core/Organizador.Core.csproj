@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A lógica do organizador, sem nada de tela: as pastas acompanhadas, as regras por extensão,
+    o passo a passo de uma organização, as pendências e o "devolver ao lugar" (Recall).
+    Só move arquivos dentro do computador: não fala com a nuvem nem apaga nada.
+  -->
+  <PropertyGroup>
+    <!-- net8.0 puro: serve ao Windows e ao Linux. O que é só do Windows fica atrás de
+         OperatingSystem.IsWindows(). -->
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Organizador.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Comum" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Comum\Comum.csproj" />
+  </ItemGroup>
+
+</Project>

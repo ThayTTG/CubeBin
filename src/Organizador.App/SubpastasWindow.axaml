@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Organizador.App.SubpastasWindow"
+        Title="Subpastas por extensão" Height="460" Width="560" MinHeight="360" MinWidth="440"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="24">
+    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+      <TextBlock Text="Subpastas por extensão" Classes="h2" />
+      <TextBlock Classes="secondary" Margin="0,6,0,0"
+                 Text="Defina uma subpasta opcional para cada extensão desta regra. Deixe em branco para o arquivo ir direto para a pasta de destino." />
+      <TextBlock Classes="pequeno" Margin="0,6,0,0"
+                 Text="Exemplo: extensão .rar com subpasta “WinRAR” vai para Compactados\WinRAR." />
+    </StackPanel>
+
+    <!-- Ações à direita, a principal por último -->
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button x:Name="BtnCancelar" Classes="secondary" Content="Cancelar" Click="BtnCancelar_Click" />
+      <Button x:Name="BtnOk" Classes="primary ic" Content="Salvar subpastas"
+              Tag="{StaticResource IconeVisto}" IsDefault="True" Click="BtnOk_Click" />
+    </StackPanel>
+
+    <Border Classes="lista">
+      <DataGrid x:Name="GridExtensoes" AutoGenerateColumns="False" IsReadOnly="False"
+                ToolTip.Tip="Dois cliques na subpasta para escrever">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Extensão" Binding="{Binding Extensao}" Width="130" IsReadOnly="True" />
+          <DataGridTextColumn Header="Subpasta (opcional)" Binding="{Binding Subpasta}" Width="*" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </Border>
+  </DockPanel>
+</Window>

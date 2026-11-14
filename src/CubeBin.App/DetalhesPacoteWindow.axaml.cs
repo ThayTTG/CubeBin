@@ -7,7 +7,9 @@ using Avalonia.Platform.Storage;
 using CubeBin.Core.Models;
 using CubeBin.Core.Services;
 // MessageBox aponta para o diálogo no tema da NokyLabs (mesma forma de chamar da MessageBox nativa).
-using MessageBox = CubeBin.App.DialogoCubeBin;
+using Comum;
+using Comum.UI;
+using MessageBox = Comum.UI.Dialogo;
 
 namespace CubeBin.App;
 
@@ -30,6 +32,7 @@ public partial class DetalhesPacoteWindow : Window
     {
         InitializeComponent();
         TemaJanelaEscura.Aplicar(this);
+        if (Dialogo.Icone is not null) Icon = Dialogo.Icone;
         _pacote = pacote;
         _googleDriveService = googleDriveService;
 

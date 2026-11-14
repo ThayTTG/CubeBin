@@ -1,0 +1,127 @@
+using System.IO;
+using Avalonia.Threading;
+using Comum.UI;
+using Microsoft.Toolkit.Uwp.Notifications;
+using Organizador.Core.Models;
+using Organizador.Core.Services;
+
+namespace Organizador.App.Services;
+
+/// <summary>
+/// Implementação concreta de INotificationService usando toasts nativos do Windows
+/// (seção 6 da spec): aviso de início com contagem de 60s e cancelamento, e resumo final.
+/// Clicar na notificação final (corpo ou botão) mostra um relatório do que aconteceu.
+/// </summary>
+public class ToastNotificationService : INotificationService
+{
+    private const string TagCancelamento = "organizador-inicio";
+    private volatile bool _canceladoPeloUsuario;
+    private ResultadoExecucao? _ultimoResultado;
+
+    public ToastNotificationService()
+    {
+        // Um único assinante para todo o tempo de vida do app — evita empilhar handlers
+        // duplicados a cada ciclo de execução (cada notificação de início registrava um novo
+        // handler antes desta correção, um vazamento pequeno mas real ao longo do tempo).
+        // Fora do Windows (só para testar a tela) não há toasts: os avisos viram no-op.
+        if (OperatingSystem.IsWindows())
+            ToastNotificationManagerCompat.OnActivated += OnToastAtivado;
+    }
+
+    private void OnToastAtivado(ToastNotificationActivatedEventArgsCompat e)
+    {
+        if (e.Argument.Contains("acao=cancelar"))
+        {
+            _canceladoPeloUsuario = true;
+            return;
+        }
+
+        if (_ultimoResultado is not null &&
+            (e.Argument.Contains("acao=ver_resultado") || e.Argument.Contains("acao=abrir_pendencias")))
+        {
+            MostrarRelatorioResultado(_ultimoResultado);
+        }
+    }
+
+    public Task<bool> NotificarInicioComCancelamentoAsync(int janelaCancelamentoSegundos)
+    {
+        _canceladoPeloUsuario = false;
+        if (!OperatingSystem.IsWindows()) return Task.FromResult(false);
+
+        new ToastContentBuilder()
+            .AddText(InfoApp.Nome)
+            .AddText($"A organização vai começar em {janelaCancelamentoSegundos}s.")
+            .AddButton(new ToastButton()
+                .SetContent("Cancelar")
+                .AddArgument("acao", "cancelar")
+                .SetBackgroundActivation())
+            .Show(toast => toast.Tag = TagCancelamento);
+
+        return AguardarJanelaAsync(janelaCancelamentoSegundos);
+    }
+
+    private async Task<bool> AguardarJanelaAsync(int segundos)
+    {
+        var decorrido = 0;
+        while (decorrido < segundos)
+        {
+            if (_canceladoPeloUsuario)
+            {
+                ToastNotificationManagerCompat.History.Remove(TagCancelamento);
+                return true;
+            }
+
+            await Task.Delay(1000);
+            decorrido++;
+        }
+
+        ToastNotificationManagerCompat.History.Remove(TagCancelamento);
+        return _canceladoPeloUsuario;
+    }
+
+    public void NotificarResultadoFinal(ResultadoExecucao resultado)
+    {
+        _ultimoResultado = resultado;
+        if (!OperatingSystem.IsWindows()) return;
+
+        var builder = new ToastContentBuilder()
+            .AddArgument("acao", "ver_resultado")
+            .AddText(InfoApp.Nome);
+
+        if (resultado.Cancelado)
+        {
+            builder.AddText("Execução cancelada pelo usuário.");
+        }
+        else
+        {
+            builder.AddText(
+                $"{resultado.ArquivosMovidos} movidos, {resultado.ArquivosComFalha} falharam, " +
+                $"{resultado.ArquivosPendentes} pendentes. Clique para ver detalhes.");
+
+            if (resultado.ArquivosPendentes > 0)
+            {
+                builder.AddButton(new ToastButton()
+                    .SetContent("Ver pendências")
+                    .AddArgument("acao", "abrir_pendencias"));
+            }
+        }
+
+        builder.Show();
+    }
+
+    /// <summary>O relatório é o mesmo nos dois sistemas (ver AvisosComuns).</summary>
+    private static void MostrarRelatorioResultado(ResultadoExecucao resultado) =>
+        AvisosComuns.MostrarRelatorioResultado(resultado);
+
+    public void NotificarMensagemSimples(string titulo, string mensagem)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        new ToastContentBuilder()
+            .AddText(titulo)
+            .AddText(mensagem)
+            .Show();
+    }
+
+    public bool ConfirmarRiscoSubpastas(string nomePasta) => AvisosComuns.ConfirmarRiscoSubpastas(nomePasta);
+}

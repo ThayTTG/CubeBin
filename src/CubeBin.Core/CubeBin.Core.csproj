@@ -1,5 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    A lógica do CubeBin a partir da versão 3, sem nada de tela: o agente de sugestões (duplicados,
+    temporários antigos, arquivos grandes parados), o apagar com registro, e o backup no Google
+    Drive (os Cubos). A organização de arquivos virou um app à parte (src/Organizador.*).
+  -->
   <PropertyGroup>
     <!-- net8.0 puro: o mesmo Core serve ao Windows e ao Linux. O que é só do Windows (registro,
          DPAPI, Known Folders, GetLastInputInfo) fica atrás de OperatingSystem.IsWindows(). -->
@@ -16,6 +21,14 @@
     <!-- DPAPI: criptografa o token OAuth em disco, ligado à conta do Windows do usuário —
          "sem token bruto" (Camada 3). Sabidamente não incluído por padrão mesmo em TFMs -windows. -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Comum" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Comum\Comum.csproj" />
   </ItemGroup>
 
 </Project>

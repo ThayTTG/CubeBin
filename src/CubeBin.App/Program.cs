@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 using Avalonia;
-using CubeBin.Core.Interop;
+using Comum.Interop;
 using NokyLabs.UI;
 
 namespace CubeBin.App;
@@ -53,27 +53,12 @@ internal static class Program
 
             Console.Error.WriteLine($"{titulo}: {mensagem}");
             if (OperatingSystem.IsLinux())
-                AvisoNoLinux(mensagem, titulo);
+                AvisoDeErroLinux.Mostrar("CubeBin", titulo, mensagem);
         }
         catch
         {
             // Se nem a janela de aviso puder ser mostrada, o crash.log já tem o registro.
         }
-    }
-
-    /// <summary>
-    /// No Linux, a caixa de erro do próprio ambiente: zenity (GNOME e a maioria) ou kdialog (KDE);
-    /// sem nenhum dos dois, ao menos uma notificação.
-    /// </summary>
-    private static void AvisoNoLinux(string mensagem, string titulo)
-    {
-        var limite = TimeSpan.FromMinutes(30);
-        if (ComandoExterno.Executar("zenity", new[] { "--error", $"--title={titulo}", $"--text={mensagem}", "--no-markup" },
-                limite: limite) is not null)
-            return;
-        if (ComandoExterno.Executar("kdialog", new[] { "--title", titulo, "--error", mensagem }, limite: limite) is not null)
-            return;
-        ComandoExterno.Abrir("notify-send", "--app-name=CubeBin", "--urgency=critical", titulo, mensagem);
     }
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]

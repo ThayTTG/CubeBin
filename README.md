@@ -1,63 +1,67 @@
-# CubeBin
+# CubeBin (e o organizador da NokyLabs)
 
-Aplicativo para Windows e Linux (C#/.NET 8, interface em Avalonia com o Kit NokyLabs) organizado em 3 módulos — **Organizar**, **Limpar** e
-**Deletar** — mais as abas de apoio **Sugestões**, **Cubos**, **Histórico** e **Login**. Roda em
-segundo plano e organiza arquivos automaticamente apenas quando o usuário está ausente; os
-módulos Limpar, Deletar e o agente de Sugestões são sempre acionados manualmente ou, no caso do
-agente, opcionalmente agendados.
+Este repositório guarda **dois apps** da NokyLabs para Windows e Linux (C#/.NET 8, interface em Avalonia com
+o Kit NokyLabs), que até a versão 2.x eram um app só:
 
-- **Organizar**: classifica arquivos por extensão e distribui em pastas locais ou no Google Drive,
-  conforme regras configuráveis (padrão ou por pasta). Agendamento automático + Pendências + Recall.
-- **Limpar**: gerencia as pastas monitoradas — limpa/restaura pastas padrão do Windows (nunca as
-  deleta) e cria/exclui pastas personalizadas livremente.
-- **Deletar**: seleção manual de arquivos/pastas de qualquer lugar do PC. Duas saídas possíveis:
-  exclusão direta e definitiva (com backup CSV antes), ou envio a um pacote de backup na nuvem
-  antes de excluir localmente (só apaga depois de confirmar que o upload terminou).
-- **Sugestões**: agente opcional (**desativado por padrão**) que analisa as pastas monitoradas em
-  segundo plano e sugere arquivos duplicados, temporários antigos ou grandes parados — usando só
-  heurísticas locais (hash, data de acesso, tamanho), sem IA externa nem internet. Mesmas duas
-  saídas do Deletar (excluir direto ou mandar para a nuvem antes).
-- **Cubos**: cada pacote de backup enviado à nuvem vira um cubo visual — quanto maior o pacote,
-  mais sólido; passe o mouse para ver a composição por categoria, clique para ver detalhes, abrir
-  no Google Drive ou restaurar.
+- **CubeBin** (3.x) — liberar espaço sem perder nada. **Sugestões** (um agente opcional, desligado
+  por padrão, que procura duplicados, temporários antigos e arquivos grandes parados, só com
+  heurísticas locais, sem internet), **Deletar** (apagar arquivos e pastas com registro em CSV
+  antes), **Cubos** (pacotes de backup no Google Drive: só apaga do computador depois de confirmar
+  o envio), **Ajustes** e **Login**.
+- **Organizador** (nome provisório) — a antiga parte "Organizar" do CubeBin: distribui os arquivos
+  das pastas acompanhadas em pastas por tipo, sozinho, quando você está longe do computador.
+  Tudo o que ele move pode voltar para onde estava (Histórico). Só mexe dentro do computador: não
+  fala com a nuvem nem apaga nada.
 
-A especificação completa (fluxo, schema do config.json, regras de negócio, changelog versão por
-versão) está em `docs/spec.md`.
+Por que separar: eram duas promessas diferentes num app só (manter tudo arrumado / liberar espaço),
+o que deixava o CubeBin confuso para quem não é da área. O plano completo da repaginada está no
+Projeto NokyLabs ("plano-cubebin-repaginado").
+
+A especificação original (fluxo, regras de negócio, changelog antigo) está em `docs/spec.md` e
+continua valendo para a organização, que agora mora no Organizador.
 
 ## Estrutura
 
 ```
 CubeBin.sln
 src/
-  CubeBin.Core/     # Lógica de negócio, sem dependência de UI
-    Models/                     # AppConfig, PastaMonitorada, RegraExtensao, ArquivoPendente, ResultadoExecucao
-    Services/
-      ConfigService.cs          # Ler/gravar config.json; limpar/restaurar pastas padrão (nunca deletar)
-      BackupService.cs          # Snapshot em CSV, ordem alfabética, com retenção
-      ClassificadorService.cs   # Extensão -> pasta de destino; resolução de conflito de nome
-      PendenciaService.cs       # Fila de arquivos sem regra mapeada
-      IdleDetectionService.cs   # Detecção de ausência via GetLastInputInfo
-      OrganizadorService.cs     # Orquestra o pipeline completo de uma execução
-      INotificationService.cs   # Abstração de notificações (implementada no App)
-    Interop/
-      NativeMethods.cs          # P/Invoke do Win32 (GetLastInputInfo)
+  Comum/              # O que os dois apps dividem, sem tela: mover arquivos com segurança, registro
+                      # em CSV, detecção de ausência, abrir com o Windows, conta dos horários e a
+                      # leitura do config da 2.x (MigracaoDaVersao2)
+  Comum.UI/           # O que os dois dividem na tela: o diálogo no visual da NokyLabs, a barra de
+                      # título escura, o ícone da bandeja, ícones (Recursos.axaml) e estilos (Estilos.axaml)
 
-  CubeBin.App/      # Avalonia: UI, bandeja do sistema, agendador
-    App.axaml(.cs)              # Bootstrap: monta os services, o agendador e a bandeja; ícones e visual das tabelas
-    Program.cs                  # Ponto de partida (e o aviso nativo de erro grave)
-    MainWindow.axaml(.cs)       # Menu lateral recolhível + 9 telas (Organizar ... Sobre)
-    SubpastasWindow / DetalhesPacoteWindow / JanelaDialogo   # Janelas auxiliares
-    DialogoCubeBin.cs           # Diálogo no visual NokyLabs com a mesma forma de chamar da MessageBox
-    TemaJanelaEscura.cs         # Barra de título escura do Windows
-    TrayIconManager.cs          # Ícone de bandeja (processo residente)
-    BackgroundScheduler.cs      # Timer que dispara ciclos do OrganizadorService
-    Services/
-      ToastNotificationService.cs  # Implementação de INotificationService com toast nativo
+  Organizador.Core/   # Regras por extensão, pastas acompanhadas, o passo a passo de uma organização,
+                      # pendências e o "devolver ao lugar" (Recall)
+  Organizador.App/    # Telas: Organizar, Pastas, Histórico, Configurações, Sobre. Organizador.exe
+
+  CubeBin.Core/       # Agente de sugestões, apagar com registro, Google Drive e os Cubos
+  CubeBin.App/        # Telas: Sugestões, Deletar, Cubos, Ajustes, Login, Sobre. CubeBin.exe
 lib/
-  NokyLabs.UI/      # Submódulo Git: o Kit NokyLabs (cores, botões, animações, créditos)
+  NokyLabs.UI/        # Submódulo Git: o Kit NokyLabs (cores, botões, animações, créditos)
 tests/
-  CubeBin.Tests/    # Testes das regras sem tela (agendamentos, configuração, classificação)
+  Organizador.Tests/  # Agendamento, configuração, classificação e a migração da 2.x
+  CubeBin.Tests/      # Agendamento do agente, configuração e a migração da 2.x
 ```
+
+Quando o organizador ganhar nome, a ideia é ele ir para um repositório próprio, levando `Comum` e
+`Comum.UI` como submódulo (do mesmo jeito que o Kit NokyLabs). Para trocar o nome, os lugares são
+`src/Organizador.App/InfoApp.cs` (nome, pasta de dados, nome na inicialização do Windows, links) e o
+`.csproj` dele (`AssemblyName`, `Product`). A cor provisória é o rosa `#F472B6` (`App.axaml`) e o
+ícone provisório é `src/Organizador.App/app.ico`.
+
+### Onde cada app guarda os arquivos
+
+| | Pasta | O que tem |
+|---|---|---|
+| CubeBin | `%LOCALAPPDATA%\CubeBin` | `config.json`, sugestões, cubos, login do Google, `registros\` (CSV do que foi apagado) |
+| Organizador | `%LOCALAPPDATA%\NokyLabs\Organizador` | `config.json`, pendências, histórico, `backups\` (CSV de cada organização) |
+
+**Quem vem da 2.x:** o primeiro dos dois apps que abrir guarda uma cópia intacta do config antigo em
+`%LOCALAPPDATA%\CubeBin\config-2.x.json`, e cada app lê a parte dele dessa cópia — a ordem não
+importa. O organizador continua usando as pendências, o histórico e a pasta temporária de onde já
+estavam (dentro de `%LOCALAPPDATA%\CubeBin`), para nada se perder. Regras que mandavam arquivos para
+o Google Drive viram regras para uma pasta local de mesmo nome, e o organizador avisa isso uma vez.
 
 ### O Kit NokyLabs (submódulo)
 
@@ -74,94 +78,58 @@ git clone --recurse-submodules https://github.com/ThayTTG/CubeBin.git
 ## Como abrir
 
 1. Instale o .NET 8 SDK (Visual Studio 2022, Rider ou só o `dotnet` CLI).
-2. Abra `CubeBin.sln` no Visual Studio, **ou**:
+2. Copie `src/CubeBin.Core/GoogleDriveCredentials.Secrets.cs.example` para
+   `GoogleDriveCredentials.Secrets.cs` (mesma pasta). Sem as credenciais reais, tudo compila e só o
+   backup na nuvem fica desligado (veja abaixo).
+3. Abra `CubeBin.sln` no Visual Studio, **ou**:
    ```
-   dotnet restore
-   dotnet build
-   dotnet test tests/CubeBin.Tests
+   dotnet build CubeBin.sln
+   dotnet test CubeBin.sln
    dotnet run --project src/CubeBin.App -- --abrir
+   dotnet run --project src/Organizador.App -- --abrir
    ```
-   O CubeBin abre só na bandeja (perto do relógio), como sempre; o `--abrir` já mostra a janela.
-3. Na primeira execução, o `ConfigService` cria automaticamente um `config.json` padrão em
-   `%LOCALAPPDATA%\CubeBin\config.json`, com Documentos, Área de Trabalho e Downloads
-   já cadastrados como pastas padrão.
-
-## O que já está implementado (esqueleto funcional)
-
-- Modelos completos alinhados ao schema do `config.json` da spec.
-- `ConfigService` com a regra de negócio "pastas padrão nunca são deletadas, só limpas/restauradas".
-- Pipeline completo em `OrganizadorService` (backup CSV → temporário → classificação → destino →
-  fila de pendências → notificação final), incluindo checagem de ausência e janela de cancelamento de 60s.
-- Resolução de conflito de nome por prefixo de pasta de origem.
-- Detecção de ausência via Win32 API.
-- Ícone de bandeja + agendador em background.
-- Toast nativo com botão de cancelar.
-- UI completa (Avalonia + Kit NokyLabs, desde a 2.0; antes era WPF) nas 8 abas atuais: Organizar (Regras de extensão + Pendências), Limpar, Deletar,
-  Sugestões (agente opcional), Cubos (pacotes de backup na nuvem), Histórico (absorve o Recall),
-  Configurações (agendamento, diretórios, iniciar com Windows) e Login. Ver "Estrutura" acima e
-  `docs/spec.md` para o detalhamento de cada uma.
-- Confirmação de risco (`INotificationService.ConfirmarRiscoSubpastas`) disparada ao salvar uma
-  pasta com "Organizar subpastas" recém-ativado.
-- Execução manual sob demanda (menu da bandeja + botão na UI), com indicador visual de progresso.
-- Subcategorias por extensão dentro de uma regra (ex: `Compactados\WinRAR`).
-- Agendamento por "N vezes ao dia a partir de um horário", em vez de intervalo fixo em minutos.
-- Registro/remoção automática na inicialização do Windows.
-- Recall de arquivos: todo arquivo movido pelo pipeline principal (ou resolvido a partir de uma
-  pendência) é registrado em `recall.json`. Botão direito num item da aba "Recall" devolve o
-  arquivo ao local original. O backup em CSV continua existindo sem alterações, como registro
-  legado independente.
-- UX das Regras de extensão revista: 1 clique seleciona, 2 cliques edita o texto da célula
-  (comportamento padrão da tabela, sem mais interceptação nossa), botão direito mostra um menu
-  contextual com "Editar &lt;coluna clicada&gt;", "Editar subpastas por extensão" e "Remover regra".
-- Perfil de publicação single-file self-contained para distribuir como um único `.exe`.
+   Os dois abrem só na bandeja (perto do relógio); o `--abrir` já mostra a janela.
 
 ## Distribuição como .exe único (sem instalar dependências)
 
-O projeto inclui um perfil de publicação (`src/CubeBin.App/Properties/PublishProfiles/SingleFile-win-x64.pubxml`)
-que gera um único `.exe` autocontido — o usuário final não precisa instalar o .NET
-separadamente, só rodar o arquivo.
+Cada app tem um perfil de publicação (`Properties/PublishProfiles/SingleFile-win-x64.pubxml`) que gera
+um único `.exe` autocontido — quem usa não precisa instalar o .NET:
 
-**Via linha de comando:**
 ```
 dotnet publish src/CubeBin.App/CubeBin.App.csproj -c Release -p:PublishProfile=SingleFile-win-x64
+dotnet publish src/Organizador.App/Organizador.App.csproj -c Release -p:PublishProfile=SingleFile-win-x64
 ```
 
-O executável final fica em:
-```
-src/CubeBin.App/bin/Release/net8.0-windows10.0.19041.0/win-x64/publish/CubeBin.exe
-```
+O lançamento automático (`.github/workflows/release.yml`) ainda publica só o CubeBin. **Não lance o
+CubeBin 3.0 antes do organizador estar publicado também**, senão quem atualizar fica sem a organização.
 
-**Via Visual Studio:** botão direito no projeto `CubeBin.App` → Publicar → escolher o
-perfil "SingleFile-win-x64" (já vem configurado) → Publicar.
-
-Esse `.exe` fica relativamente grande (na faixa de 100-150 MB), porque embute o runtime do .NET
-inteiro — é a troca normal para não depender de nada instalado na máquina do usuário.
-
-**Bônus:** publicado dessa forma, `Environment.ProcessPath` (usado pela funcionalidade "Iniciar
-com o Windows") aponta corretamente para o `.exe` real, em vez de `dotnet.exe` como acontece
-quando se roda via `dotnet run` — a ressalva mencionada nas notas de atualização anteriores deixa
-de se aplicar a partir de um executável publicado dessa forma.
+Observação sobre "Iniciar com o Windows": quando o app roda via `dotnet run`, `Environment.ProcessPath`
+aponta para `dotnet.exe`. Para testar essa opção, use o `.exe` compilado ou publicado. Cada app se
+registra com o seu nome (`CubeBin` e `NokyLabs Organizador`), então um não desliga o outro.
 
 ## Versão Linux
 
-O mesmo código gera a versão Linux (x64). O alvo é escolhido pelo `-r`: com `-r linux-x64` o app
-compila em `net8.0` puro, sem os toasts do Windows. Dá para publicar a partir do próprio Windows:
+O mesmo código gera a versão Linux (x64) dos dois apps. O alvo é escolhido pelo `-r`: com
+`-r linux-x64` os apps compilam em `net8.0` puro, sem os toasts do Windows. Dá para publicar a
+partir do próprio Windows:
 
 ```
 dotnet publish src/CubeBin.App/CubeBin.App.csproj -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish-linux
+dotnet publish src/Organizador.App/Organizador.App.csproj -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish-linux-organizador
 ```
 
-A pasta `publish-linux` fica com o executável `CubeBin` e o `icon.png`, que o NokyLabs Launcher
-usa no atalho. No lançamento, o GitHub Actions gera o `CubeBin-linux-x64.zip` junto do pacote Windows.
+Cada pasta fica com o executável (`CubeBin` ou `Organizador`) e o `icon.png`, que o NokyLabs
+Launcher usa no atalho. No lançamento, o GitHub Actions gera o `CubeBin-linux-x64.zip` junto do
+pacote Windows (o organizador ainda não tem lançamento próprio).
 
 O que muda no Linux:
 
 | Recurso | Windows | Linux |
 |---|---|---|
 | Saber se o usuário está ausente | `GetLastInputInfo` | D-Bus do GNOME (Mutter) ou do KDE, ou XScreenSaver no X11. Sem nenhum deles (Sway, Hyprland), organiza no horário agendado, sempre com o aviso de cancelamento antes. |
-| Abrir junto com o sistema | Registro (`HKCU\...\Run`) | `~/.config/autostart/cubebin.desktop` |
-| Token do Google Drive | DPAPI | Chaveiro do sistema (`secret-tool`/libsecret); sem chaveiro, arquivo com permissão 600 |
-| Aviso antes de organizar | Toast com "Cancelar" | Janelinha com contagem regressiva e "Cancelar" |
+| Abrir junto com o sistema | Registro (`HKCU\...\Run`) | `~/.config/autostart/<app>.desktop` (ex.: `cubebin.desktop`, `nokylabs-organizador.desktop`) |
+| Token do Google Drive (CubeBin) | DPAPI | Chaveiro do sistema (`secret-tool`/libsecret); sem chaveiro, arquivo com permissão 600 |
+| Aviso antes de organizar (Organizador) | Toast com "Cancelar" | Janelinha com contagem regressiva e "Cancelar" |
 | Resumo e avisos | Toast | `notify-send` (libnotify) |
 | Pasta Downloads | Known Folders | `~/.config/user-dirs.dirs` (ex.: `~/Transferências`) |
 | Ícone perto do relógio | Bandeja do Windows | StatusNotifierItem. No GNOME precisa da extensão "AppIndicator". |
@@ -180,19 +148,15 @@ As credenciais ficam num arquivo separado que **não é versionado no Git** (`sr
 4. Vá em **"APIs e serviços" → "Credenciais" → "Criar credenciais" → "ID do cliente OAuth"**, tipo de aplicativo **"Aplicativo para computador"** (Desktop app). Dê um nome e crie.
 5. Copie o **Client ID** e o **Client Secret** gerados.
 6. Copie `src/CubeBin.Core/GoogleDriveCredentials.Secrets.cs.example` para `GoogleDriveCredentials.Secrets.cs` (mesma pasta, sem o `.example`) e substitua os dois placeholders pelos valores reais. Esse arquivo copiado nunca é commitado — já está no `.gitignore`.
-7. Recompile o app. A partir daí, o botão "Conectar ao Google Drive" na aba Login já funciona para qualquer pessoa que rodar esse build — sem precisar repetir os passos acima.
+7. Recompile o app. A partir daí, o botão "Conectar ao Google Drive" na aba Login do CubeBin já funciona para qualquer pessoa que rodar esse build — sem precisar repetir os passos acima.
 
 ## Próximos passos sugeridos
 
-1. Adicionar testes unitários para `ClassificadorService`, `ConfigService`, `BackupService` e
-   `BackgroundScheduler.ObterHorariosDoDia` (são as peças com regras de negócio mais sensíveis).
-2. Validar em Visual Studio: como este ambiente não tem o .NET SDK instalado, o código não pôde
-   ser compilado aqui — rode `dotnet build` após aplicar cada atualização.
-3. **Atenção ao testar "Iniciar com o Windows":** `Environment.ProcessPath` aponta para
-   `dotnet.exe` quando o app roda via `dotnet run`. Para essa funcionalidade registrar o caminho
-   certo no registro do Windows, teste a partir do `.exe` gerado em `bin/Debug/...` (ou de uma
-   versão publicada com `dotnet publish`), não via `dotnet run`.
-4. Ao testar o novo agendamento por vezes/dia, um `config.json` de uma versão anterior a 1.9 não
-   terá os campos `execucoesPorDia`/`horarioInicio`/`iniciarComWindows` — eles assumem os valores
-   padrão da classe automaticamente (4 vezes/dia a partir das 08:00, inicialização desligada), sem
-   precisar apagar o arquivo manualmente.
+Seguem o plano da repaginada (Projeto NokyLabs, "plano-cubebin-repaginado"):
+
+1. Escolher o nome do organizador (e, com ele, a cor, o ícone e o repositório próprio).
+2. Organizador: Linha do tempo com "Desfazer tudo", tela de Início com prévia, automático desligado
+   na primeira vez, Pastas e Regras em cartões, Ajustes em frases.
+3. CubeBin: tela de Início ("Você pode liberar X GB"), Revisar (Sugestões + Deletar), Login dentro
+   de Ajustes.
+4. Launcher e site: os dois apps no catálogo, com o aviso da separação para quem tinha o CubeBin 2.x.

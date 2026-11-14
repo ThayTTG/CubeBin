@@ -1,5 +1,5 @@
 using System.Text.Json;
-using CubeBin.Core.Interop;
+using Comum.Interop;
 using Google.Apis.Util.Store;
 
 namespace CubeBin.Core.Services;
