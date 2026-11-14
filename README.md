@@ -1,6 +1,6 @@
 # CubeBin
 
-Aplicativo Windows (C#/.NET 8, interface em Avalonia com o Kit NokyLabs) organizado em 3 módulos — **Organizar**, **Limpar** e
+Aplicativo para Windows e Linux (C#/.NET 8, interface em Avalonia com o Kit NokyLabs) organizado em 3 módulos — **Organizar**, **Limpar** e
 **Deletar** — mais as abas de apoio **Sugestões**, **Cubos**, **Histórico** e **Login**. Roda em
 segundo plano e organiza arquivos automaticamente apenas quando o usuário está ausente; os
 módulos Limpar, Deletar e o agente de Sugestões são sempre acionados manualmente ou, no caso do
@@ -141,6 +141,34 @@ inteiro — é a troca normal para não depender de nada instalado na máquina d
 com o Windows") aponta corretamente para o `.exe` real, em vez de `dotnet.exe` como acontece
 quando se roda via `dotnet run` — a ressalva mencionada nas notas de atualização anteriores deixa
 de se aplicar a partir de um executável publicado dessa forma.
+
+## Versão Linux
+
+O mesmo código gera a versão Linux (x64). O alvo é escolhido pelo `-r`: com `-r linux-x64` o app
+compila em `net8.0` puro, sem os toasts do Windows. Dá para publicar a partir do próprio Windows:
+
+```
+dotnet publish src/CubeBin.App/CubeBin.App.csproj -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish-linux
+```
+
+A pasta `publish-linux` fica com o executável `CubeBin` e o `icon.png`, que o NokyLabs Launcher
+usa no atalho. No lançamento, o GitHub Actions gera o `CubeBin-linux-x64.zip` junto do pacote Windows.
+
+O que muda no Linux:
+
+| Recurso | Windows | Linux |
+|---|---|---|
+| Saber se o usuário está ausente | `GetLastInputInfo` | D-Bus do GNOME (Mutter) ou do KDE, ou XScreenSaver no X11. Sem nenhum deles (Sway, Hyprland), organiza no horário agendado, sempre com o aviso de cancelamento antes. |
+| Abrir junto com o sistema | Registro (`HKCU\...\Run`) | `~/.config/autostart/cubebin.desktop` |
+| Token do Google Drive | DPAPI | Chaveiro do sistema (`secret-tool`/libsecret); sem chaveiro, arquivo com permissão 600 |
+| Aviso antes de organizar | Toast com "Cancelar" | Janelinha com contagem regressiva e "Cancelar" |
+| Resumo e avisos | Toast | `notify-send` (libnotify) |
+| Pasta Downloads | Known Folders | `~/.config/user-dirs.dirs` (ex.: `~/Transferências`) |
+| Ícone perto do relógio | Bandeja do Windows | StatusNotifierItem. No GNOME precisa da extensão "AppIndicator". |
+
+No Linux, o organizador também ignora arquivos ocultos (nome começando com ponto) e downloads em
+andamento (`.part`, `.crdownload`), e a regra padrão "Instaladores" inclui `.deb`, `.rpm`,
+`.appimage`, `.flatpakref`, `.run` e `.sh`.
 
 ## Configurar a integração com o Google Drive (necessário antes de usar)
 

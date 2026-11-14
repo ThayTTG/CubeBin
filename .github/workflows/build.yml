@@ -20,7 +20,12 @@ concurrency:
 
 jobs:
   compilar:
-    runs-on: windows-latest
+    # Windows e Linux: um erro que só aparece num dos dois também deixa o X vermelho.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
         with:

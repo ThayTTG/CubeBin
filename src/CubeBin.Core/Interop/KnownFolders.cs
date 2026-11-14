@@ -37,16 +37,22 @@ public static class KnownFolders
         }
     }
 
+    /// <summary>No Linux, o nome real da pasta vem do user-dirs.dirs (ex.: ~/Transferências).</summary>
+    private static string? ObterNoLinux(string tipoXdg) =>
+        OperatingSystem.IsLinux() ? PastasXdg.Obter(tipoXdg) : null;
+
     /// <summary>Caminho real da pasta Área de Trabalho, já considerando redirecionamento do OneDrive.</summary>
     public static string ObterAreaTrabalho() =>
-        ObterCaminho(IdDesktop) ?? Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        ObterCaminho(IdDesktop) ?? ObterNoLinux("DESKTOP") ??
+        Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
 
     /// <summary>Caminho real da pasta Documentos, já considerando redirecionamento do OneDrive.</summary>
     public static string ObterDocumentos() =>
-        ObterCaminho(IdDocumentos) ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        ObterCaminho(IdDocumentos) ?? ObterNoLinux("DOCUMENTS") ??
+        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
     /// <summary>Caminho real da pasta Downloads (sem enum equivalente no .NET clássico).</summary>
     public static string ObterDownloads() =>
-        ObterCaminho(IdDownloads) ??
+        ObterCaminho(IdDownloads) ?? ObterNoLinux("DOWNLOAD") ??
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
 }

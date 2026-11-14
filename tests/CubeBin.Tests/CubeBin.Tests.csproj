@@ -1,8 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Testes das regras que não dependem da tela: agendamentos, configuração, classificação e o diálogo. -->
+  <!-- Mesmo alvo do CubeBin.App: Windows com toasts; Linux em net8.0 puro. -->
   <PropertyGroup>
+    <AlvoLinux Condition="'$(RuntimeIdentifier)' != '' and !$(RuntimeIdentifier.StartsWith('win'))">true</AlvoLinux>
+    <AlvoLinux Condition="'$(RuntimeIdentifier)' == '' and !$([MSBuild]::IsOSPlatform('Windows'))">true</AlvoLinux>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AlvoLinux)' != 'true'">
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AlvoLinux)' == 'true'">
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>

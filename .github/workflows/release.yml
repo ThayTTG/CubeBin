@@ -22,7 +22,64 @@ permissions:
   contents: write
 
 jobs:
+  # Pacote Linux (CubeBin-linux-x64.zip). O lançamento em si acontece no job do Windows,
+  # que espera este terminar e anexa os dois pacotes na mesma versão.
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true   # o Kit NokyLabs (lib/NokyLabs.UI)
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Preparar credenciais do Google Drive
+        shell: bash
+        env:
+          CLIENT_ID: ${{ secrets.CUBEBIN_GDRIVE_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CUBEBIN_GDRIVE_CLIENT_SECRET }}
+        run: |
+          destino="src/CubeBin.Core/GoogleDriveCredentials.Secrets.cs"
+          if [ -n "$CLIENT_ID" ] && [ -n "$CLIENT_SECRET" ]; then
+            printf 'namespace CubeBin.Core;\npublic static partial class GoogleDriveCredentials\n{\n    public const string ClientId = "%s";\n    public const string ClientSecret = "%s";\n}\n' \
+              "$CLIENT_ID" "$CLIENT_SECRET" > "$destino"
+            echo "Credenciais do Google Drive configuradas."
+          else
+            cp "$destino.example" "$destino"
+            echo "::warning::Sem credenciais do Google Drive: o backup na nuvem ficará desativado neste pacote."
+          fi
+
+      - name: Testes
+        run: dotnet test tests/CubeBin.Tests -c Release
+
+      - name: Publicar (linux-x64, arquivo único)
+        run: >
+          dotnet publish src/CubeBin.App/CubeBin.App.csproj -c Release -r linux-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none
+          -o publish
+
+      - name: Compactar
+        shell: bash
+        run: |
+          test -f publish/CubeBin || { echo "Faltou o executável CubeBin."; exit 1; }
+          test -f publish/icon.png || { echo "Faltou o icon.png (usado no atalho do launcher)."; exit 1; }
+          chmod +x publish/CubeBin
+          # O zip guarda a permissão de execução; o NokyLabs Launcher também aplica chmod ao instalar.
+          (cd publish && zip -9 -r ../CubeBin-linux-x64.zip .)
+          sha256sum CubeBin-linux-x64.zip | awk '{print toupper($1)}' > CubeBin-linux-x64.zip.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cubebin-linux
+          path: |
+            CubeBin-linux-x64.zip
+            CubeBin-linux-x64.zip.sha256
+          if-no-files-found: error
+
   build-and-release:
+    needs: linux
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
@@ -100,6 +157,11 @@ jobs:
           Compress-Archive -Path publish\* -DestinationPath CubeBin-win-x64.zip
           (Get-FileHash CubeBin-win-x64.zip -Algorithm SHA256).Hash | Out-File -Encoding ascii CubeBin-win-x64.zip.sha256
 
+      - name: Pegar o pacote Linux
+        uses: actions/download-artifact@v4
+        with:
+          name: cubebin-linux
+
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.versao.outputs.tag }}
@@ -109,6 +171,8 @@ jobs:
           files: |
             CubeBin-win-x64.zip
             CubeBin-win-x64.zip.sha256
+            CubeBin-linux-x64.zip
+            CubeBin-linux-x64.zip.sha256
           body: |
             ## CubeBin ${{ steps.versao.outputs.tag }}
 
@@ -119,12 +183,17 @@ jobs:
 
             Organiza suas pastas por tipo de arquivo, guarda um backup de tudo e libera espaço com segurança.
 
-            **Como instalar**
+            **Como instalar no Windows**
             1. Baixe o `CubeBin-win-x64.zip` abaixo (ou instale pelo NokyLabs Launcher)
             2. Extraia e abra o `CubeBin.exe`
             3. Se aparecer o aviso azul do Windows, clique em "Mais informações" › "Executar assim mesmo"
 
-            **Requisitos:** Windows 10 ou 11 (64 bits). Não precisa instalar o .NET.
+            **Como instalar no Linux**
+            1. Baixe o `CubeBin-linux-x64.zip` abaixo (ou instale pelo NokyLabs Launcher)
+            2. Extraia e abra o `CubeBin` (se precisar: `chmod +x CubeBin`)
+            3. No GNOME, o ícone perto do relógio precisa da extensão "AppIndicator"
+
+            **Requisitos:** Windows 10 ou 11 (64 bits), ou Linux x64 (Ubuntu 22.04+, Fedora, etc.). Não precisa instalar o .NET.
 
             Mais detalhes: https://thayttg.github.io/nokylabs/#cubebin
 
