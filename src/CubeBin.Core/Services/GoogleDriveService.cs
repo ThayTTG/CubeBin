@@ -1,6 +1,7 @@
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Drive.v3;
 using Google.Apis.Services;
+using Google.Apis.Util.Store;
 using CubeBin.Core;
 
 namespace CubeBin.Core.Services;
@@ -50,7 +51,7 @@ public class GoogleDriveService
             Escopos,
             "usuario",
             CancellationToken.None,
-            new DpapiDataStore(_pastaCredenciais));
+            CriarArmazenamentoDoToken());
 
         _servico = new DriveService(new BaseClientService.Initializer
         {
@@ -58,6 +59,15 @@ public class GoogleDriveService
             ApplicationName = NomeAplicativo
         });
     }
+
+    /// <summary>
+    /// Onde o token OAuth fica guardado, sempre criptografado pelo sistema: DPAPI no Windows,
+    /// chaveiro do sistema (libsecret) no Linux.
+    /// </summary>
+    private IDataStore CriarArmazenamentoDoToken() =>
+        OperatingSystem.IsWindows()
+            ? new DpapiDataStore(_pastaCredenciais)
+            : new LinuxSecretDataStore(_pastaCredenciais);
 
     public void Desconectar()
     {

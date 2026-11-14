@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -11,6 +12,7 @@ namespace CubeBin.Core.Services;
 /// Windows do usuário atual, ilegível por outro usuário/processo sem passar pela mesma sessão.
 /// Atende ao requisito "sem armazenar token bruto" da Camada 3.
 /// </summary>
+[SupportedOSPlatform("windows")]
 public class DpapiDataStore : IDataStore
 {
     private readonly string _pasta;
