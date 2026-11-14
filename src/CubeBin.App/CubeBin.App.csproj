@@ -4,19 +4,36 @@
     CubeBin 2: a mesma lógica da versão 1 (toda no CubeBin.Core), com a interface em
     Avalonia + NokyLabs.UI (o Kit NokyLabs, com o vermelho do CubeBin).
   -->
+  <!--
+    Windows: net8.0-windows10.0.19041.0 (toasts nativos, ícone e manifesto do .exe).
+    Linux: net8.0 puro. Vale tanto para compilar no Linux quanto para publicar a partir do
+    Windows com "-r linux-x64" (o -r decide quando foi informado; senão, o sistema atual).
+  -->
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <AlvoLinux Condition="'$(RuntimeIdentifier)' != '' and !$(RuntimeIdentifier.StartsWith('win'))">true</AlvoLinux>
+    <AlvoLinux Condition="'$(RuntimeIdentifier)' == '' and !$([MSBuild]::IsOSPlatform('Windows'))">true</AlvoLinux>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AlvoLinux)' != 'true'">
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <!-- Permite compilar (e testar a tela) fora do Windows também. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AlvoLinux)' == 'true'">
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>CubeBin.App</RootNamespace>
     <!-- O executável se chama CubeBin.exe (o projeto continua CubeBin.App). -->
     <AssemblyName>CubeBin</AssemblyName>
-    <ApplicationIcon>app.ico</ApplicationIcon>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
     <Version>2.0.0</Version>
     <Product>CubeBin</Product>
     <AssemblyTitle>CubeBin</AssemblyTitle>
@@ -30,8 +47,16 @@
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.*" />
     <!-- As tabelas (regras, pendências, histórico...). -->
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.*" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(AlvoLinux)' != 'true'">
     <!-- Toasts nativos do Windows 10/11 (aviso de início com "Cancelar" e resumo final). -->
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(AlvoLinux)' == 'true'">
+    <!-- O toast é só do Windows; no Linux os avisos ficam no LinuxNotificationService. -->
+    <Compile Remove="Services\ToastNotificationService.cs" />
   </ItemGroup>
 
   <ItemGroup>
