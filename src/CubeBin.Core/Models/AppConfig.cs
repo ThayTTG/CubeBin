@@ -1,56 +1,36 @@
+using Comum;
+
 namespace CubeBin.Core.Models;
 
 /// <summary>
-/// Raiz do config.json — espelha a seção 2 da especificação técnica.
+/// Raiz do config.json do CubeBin a partir da versão 3, quando a organização virou um app à parte.
+/// Aqui fica só o que é da faxina e da nuvem: as pastas que o agente analisa, o agente de
+/// sugestões, os registros do que foi apagado e o backup no Google Drive (os Cubos).
+/// Os nomes dos campos que já existiam na 2.x continuam iguais, para a migração ler o arquivo antigo.
 /// </summary>
 public class AppConfig
 {
-    public int VersaoConfig { get; set; } = 1;
+    /// <summary>3 = config só da faxina (a 2.x gravava 1 e tinha a organização junto).</summary>
+    public int VersaoConfig { get; set; } = 3;
 
-    public string DiretorioTemporario { get; set; } = string.Empty;
-
-    /// <summary>Quantas vezes por dia o organizador roda automaticamente (distribuídas em intervalos iguais de 24h/N).</summary>
-    public int ExecucoesPorDia { get; set; } = 4;
-
-    /// <summary>Horário da primeira execução do dia. As demais ocorrem a cada 24h/ExecucoesPorDia a partir daqui.</summary>
-    public TimeOnly HorarioInicio { get; set; } = new(8, 0);
-
+    /// <summary>Quanto tempo sem mexer no computador para o agente poder analisar sozinho.</summary>
     public int TempoAusenciaMinutos { get; set; } = 10;
-
-    /// <summary>Janela de cancelamento exibida na notificação de início (padrão: 60s).</summary>
-    public int JanelaCancelamentoSegundos { get; set; } = 60;
 
     /// <summary>Se true, o app é registrado para abrir automaticamente junto com o Windows.</summary>
     public bool IniciarComWindows { get; set; } = false;
 
-    /// <summary>
-    /// Diretórios nativos do Windows (Documentos, Área de Trabalho, Downloads, ...).
-    /// Nunca remova itens desta lista via código — apenas via ConfigService.LimparPastaPadrao /
-    /// ConfigService.RestaurarPastaPadrao.
-    /// </summary>
-    public List<PastaMonitorada> PastasPadrao { get; set; } = new();
+    /// <summary>As pastas onde o agente procura o que limpar (nunca o disco inteiro).</summary>
+    public List<PastaAnalisada> PastasAnalisadas { get; set; } = new();
 
-    /// <summary>Pastas criadas livremente pelo usuário — podem ser adicionadas/removidas sem restrição.</summary>
-    public List<PastaMonitorada> PastasPersonalizadas { get; set; } = new();
-
-    public Dictionary<string, RegraExtensao> RegrasExtensao { get; set; } = new();
-
+    /// <summary>Onde ficam os registros em CSV do que foi apagado, e quantos manter.</summary>
     public BackupConfig Backup { get; set; } = new();
 
-    public string ArquivoFilaPendencias { get; set; } = string.Empty;
-
-    /// <summary>Caminho do recall.json — histórico de arquivos movidos, para poder devolver ao local original.</summary>
-    public string ArquivoRecall { get; set; } = string.Empty;
-
-    /// <summary>Pasta onde o token de acesso do Google fica salvo, para não pedir login toda vez.</summary>
-    public string PastaCredenciaisGoogleDrive { get; set; } = string.Empty;
-
-    // ===================== Agente de sugestões (Camada 2) =====================
+    // ===================== Agente de sugestões =====================
 
     /// <summary>Desativado por padrão — o agente só roda se o usuário ligar explicitamente.</summary>
     public bool AgenteAtivo { get; set; } = false;
 
-    /// <summary>Quantas vezes por dia o agente analisa o disco (mesma lógica de horários do Organizar).</summary>
+    /// <summary>Quantas vezes por dia o agente analisa as pastas.</summary>
     public int AgenteExecucoesPorDia { get; set; } = 1;
 
     /// <summary>Horário da primeira análise do dia.</summary>
@@ -68,14 +48,14 @@ public class AppConfig
     /// <summary>Caminho do sugestoes.json — sugestões pendentes/aprovadas/ignoradas do agente.</summary>
     public string ArquivoSugestoes { get; set; } = string.Empty;
 
-    // ===================== Backup em nuvem (Camada 3) =====================
+    // ===================== Backup na nuvem (os Cubos) =====================
 
-    /// <summary>Pasta no Google Drive onde os pacotes de backup (.zip) são salvos. Tem valor literal
-    /// padrão — diferente de campos calculados em runtime, não precisa de migração especial.</summary>
+    /// <summary>Pasta onde o token de acesso do Google fica salvo, para não pedir login toda vez.</summary>
+    public string PastaCredenciaisGoogleDrive { get; set; } = string.Empty;
+
+    /// <summary>Pasta no Google Drive onde os pacotes de backup (.zip) são salvos.</summary>
     public string CaminhoDriveBackups { get; set; } = "CubeBin/Backups";
 
-    /// <summary>Caminho do pacotes.json — histórico de pacotes de backup enviados (os "Cubos" da Camada 4).</summary>
+    /// <summary>Caminho do pacotes.json — histórico de pacotes de backup enviados (os "Cubos").</summary>
     public string ArquivoPacotesBackup { get; set; } = string.Empty;
-
-    public IEnumerable<PastaMonitorada> TodasAsPastas => PastasPadrao.Concat(PastasPersonalizadas);
 }

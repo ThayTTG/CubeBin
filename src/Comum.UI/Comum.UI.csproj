@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    O que os dois apps da família dividem na tela, por cima do Kit NokyLabs: o diálogo no visual
+    da NokyLabs (com a mesma forma de chamar da MessageBox), a barra de título escura, o ícone da
+    bandeja e os ícones/estilos (Recursos.axaml e Estilos.axaml).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Comum.UI</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\lib\NokyLabs.UI\src\NokyLabs.UI\NokyLabs.UI.csproj" />
+  </ItemGroup>
+
+</Project>

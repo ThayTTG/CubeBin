@@ -1,0 +1,36 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:NokyLabs.UI"
+             x:Class="Organizador.App.App"
+             RequestedThemeVariant="Dark">
+
+  <!--
+    O app continua residente na bandeja mesmo com a janela fechada: só encerra pelo "Sair" do
+    menu do ícone (ShutdownMode="OnExplicitShutdown", ligado em App.axaml.cs).
+    Cores, botões e animações vêm do Kit NokyLabs (lib/NokyLabs.UI). A cor rosa é provisória,
+    até o app ganhar nome (é uma cor que nenhum outro app da NokyLabs usa).
+  -->
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <!-- Ícones, ilustrações e cores neutras divididos com o outro app da família. -->
+        <ResourceInclude Source="avares://Comum.UI/Recursos.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+
+      <!-- Situação de cada arquivo movido (Histórico): organizado, será devolvido, devolvido. -->
+      <SolidColorBrush x:Key="RecallAtivoBrush" Color="#2A2149" />
+      <SolidColorBrush x:Key="RecallPendenteBrush" Color="#24FBBF24" />
+      <SolidColorBrush x:Key="RecallRestauradoBrush" Color="#2434D399" />
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+    <ui:NokyTheme Accent="#F472B6" />
+    <!-- Textos das páginas, cartões, botões com ícone e tabelas, iguais nos dois apps. -->
+    <StyleInclude Source="avares://Comum.UI/Estilos.axaml" />
+  </Application.Styles>
+
+</Application>

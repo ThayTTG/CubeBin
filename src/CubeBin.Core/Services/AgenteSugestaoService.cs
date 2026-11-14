@@ -6,8 +6,8 @@ namespace CubeBin.Core.Services;
 /// <summary>
 /// O "agente de IA" da Camada 2 é, na prática, um conjunto de heurísticas locais — sem depender de
 /// nenhuma IA externa, custo de API ou conexão com a internet, exatamente como pedido na releitura.
-/// Analisa as mesmas pastas monitoradas já configuradas em Organizar/Limpar (nunca o disco inteiro,
-/// por segurança e desempenho) e só gera sugestões — nunca apaga nada por conta própria.
+/// Analisa só as pastas escolhidas em Ajustes (nunca o disco inteiro, por segurança e
+/// desempenho) e só gera sugestões — nunca apaga nada por conta própria.
 /// </summary>
 public class AgenteSugestaoService
 {
@@ -17,15 +17,14 @@ public class AgenteSugestaoService
     {
         var arquivos = new List<FileInfo>();
 
-        foreach (var pasta in config.TodasAsPastas)
+        foreach (var pasta in config.PastasAnalisadas)
         {
             if (!Directory.Exists(pasta.Caminho)) continue;
 
             try
             {
-                // O agente sempre olha recursivamente — diferente de Organizar, aqui não há risco de
-                // "reprocessar" nada (é só sugestão, nunca move/apaga sozinho), então o toggle
-                // OrganizarSubpastas de cada pasta não se aplica.
+                // O agente sempre olha também as subpastas: aqui não há risco de "reprocessar"
+                // nada (é só sugestão, nunca move nem apaga sozinho).
                 arquivos.AddRange(new DirectoryInfo(pasta.Caminho).GetFiles("*", SearchOption.AllDirectories));
             }
             catch (UnauthorizedAccessException)

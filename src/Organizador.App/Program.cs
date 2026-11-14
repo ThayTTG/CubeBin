@@ -1,0 +1,60 @@
+using System.Runtime.InteropServices;
+using Avalonia;
+using NokyLabs.UI;
+
+namespace Organizador.App;
+
+/// <summary>Ponto de partida do programa.</summary>
+internal static class Program
+{
+    [STAThread]
+    public static void Main(string[] args)
+    {
+        // Exceções fora da thread da tela (threads de segundo plano) também vão para o crash.log.
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            if (e.ExceptionObject is Exception ex)
+                App.RegistrarCrash(ex);
+        };
+
+        try
+        {
+            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        }
+        catch (Exception ex)
+        {
+            App.RegistrarCrash(ex);
+            AvisoDoSistema($"Não foi possível iniciar o {InfoApp.Nome}.\n\nDetalhes em:\n{App.CaminhoLogCrash}",
+                "Erro na inicialização");
+        }
+    }
+
+    // Usado também pelo previewer do Avalonia.
+    public static AppBuilder BuildAvaloniaApp() =>
+        AppBuilder.Configure<App>()
+            .UsePlatformDetect()
+            .UseNokyLabs()
+            .LogToTrace();
+
+    /// <summary>
+    /// Aviso de último caso, com a caixa de mensagem do próprio Windows (não depende do visual
+    /// do app, então aparece mesmo se o erro tiver vindo dele).
+    /// </summary>
+    public static void AvisoDoSistema(string mensagem, string titulo)
+    {
+        try
+        {
+            if (OperatingSystem.IsWindows())
+                MessageBoxW(IntPtr.Zero, mensagem, titulo, 0x10 /* MB_ICONERROR */);
+            else
+                Console.Error.WriteLine($"{titulo}: {mensagem}");
+        }
+        catch
+        {
+            // Se nem a janela de aviso puder ser mostrada, o crash.log já tem o registro.
+        }
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
+}

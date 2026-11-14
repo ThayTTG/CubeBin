@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Testes das regras que não dependem da tela: agendamentos, configuração, classificação e o diálogo. -->
+  <!-- Testes do CubeBin que não dependem da tela: o agendamento do agente, a configuração e a
+       migração do CubeBin 2.x (quando a organização ainda morava aqui). -->
   <PropertyGroup>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>

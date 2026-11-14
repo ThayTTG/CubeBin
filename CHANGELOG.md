@@ -5,6 +5,12 @@ Tudo o que muda no CubeBin, versão por versão. O texto de cada versão vira as
 **Como usar:** anote as mudanças em `## [Não lançado]` enquanto trabalha. Na hora de lançar, é só aumentar o `<Version>` no `.csproj` e enviar para o branch `release`: o lançamento usa essa seção e ela vira a seção da versão sozinha.
 
 ## [Não lançado]
+<!-- 3.0.0 — NÃO LANÇAR antes do organizador: sem ele publicado junto, quem atualizar fica sem a organização. -->
+- O CubeBin agora cuida só de liberar espaço com segurança: **Sugestões**, **Deletar**, **Cubos** e o login do Google Drive. A organização de arquivos virou um app separado da NokyLabs, que você instala pelo NokyLabs Launcher.
+- Suas configurações vêm junto: o agente de sugestões, o login do Google, os Cubos e o "abrir junto com o Windows" continuam como estavam. As pastas que eram organizadas viram as pastas que o agente analisa.
+- Nova tela **Ajustes**: escolha em quais pastas o agente procura o que limpar, quanto tempo longe do computador ele espera e onde ficam os registros do que foi apagado (com um botão para abrir essa pasta).
+- No menu do ícone perto do relógio, "Organizar agora" virou **Procurar o que limpar**: roda o agente na hora e abre as Sugestões.
+- Os registros em CSV do que foi apagado agora ficam numa pasta só deles ("registros"), separados do histórico da organização.
 
 ## [2.0.0] - 2026-11-09
 - Motor gráfico novo (Avalonia), no padrão de todos os apps da NokyLabs: o mesmo visual e as mesmas animações do launcher, do ValReport e do YT-DLP GUI, no vermelho do CubeBin. Tudo continua funcionando do mesmo jeito.

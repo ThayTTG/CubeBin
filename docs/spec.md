@@ -1,5 +1,10 @@
 # Especificação Técnica — Organizador de Arquivos para Windows
 
+> **Nota (nov/2026):** a partir da separação em dois apps, esta especificação descreve o
+> **Organizador** (`src/Organizador.*`). As partes de Deletar, Sugestões, Cubos e Google Drive
+> continuam valendo para o **CubeBin 3** (`src/CubeBin.*`), com uma diferença: as regras de
+> extensão não mandam mais arquivos para o Google Drive (a nuvem ficou só no CubeBin). Veja o README.
+
 **Versão atual: 2.6**
 
 ## Notas de Atualização

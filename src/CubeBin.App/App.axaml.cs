@@ -4,6 +4,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using Comum;
+using Comum.UI;
 using CubeBin.App.Services;
 using CubeBin.Core;
 using CubeBin.Core.Models;
@@ -12,28 +14,30 @@ using CubeBin.Core.Services;
 namespace CubeBin.App;
 
 /// <summary>
-/// O app em si: sobe os serviços do Core, os agendadores e o ícone da bandeja. A janela principal
-/// só é criada quando alguém pede para abrir (menu da bandeja), igual à versão 1. Os avisos de
-/// erro grave usam a caixa de mensagem NATIVA do Windows de propósito: se o próprio visual for a
-/// causa do erro, a mensagem ainda precisa conseguir aparecer. O resto do app usa DialogoCubeBin.
+/// O app em si: sobe os serviços do Core, o agendador do agente e o ícone da bandeja. A janela
+/// principal só é criada quando alguém pede para abrir (menu da bandeja). Os avisos de erro grave
+/// usam a caixa de mensagem NATIVA do Windows de propósito: se o próprio visual for a causa do
+/// erro, a mensagem ainda precisa conseguir aparecer. O resto do app usa o Dialogo da Comum.UI.
+///
+/// Desde a versão 3, o CubeBin não organiza mais nada sozinho: isso virou um app à parte. Aqui
+/// só o agente de sugestões roda em segundo plano (e só se a pessoa ligar).
 /// </summary>
 public partial class App : Application
 {
     private TrayIconManager? _trayIconManager;
-    private BackgroundScheduler? _backgroundScheduler;
     private AgenteScheduler? _agenteScheduler;
     private ConfigService? _configService;
     private INotificationService? _notificationService;
-    private OrganizadorService? _organizadorService;
     private GoogleDriveService? _googleDriveService;
-    private readonly InicializacaoService _inicializacaoService = new();
-    private readonly RecallService _recallService = new();
+    private readonly InicializacaoService _inicializacaoService = new("CubeBin");
 
     private IClassicDesktopStyleApplicationLifetime? _desktop;
 
-    public static readonly string CaminhoLogCrash = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "CubeBin", "crash.log");
+    /// <summary>%LOCALAPPDATA%\CubeBin — a mesma pasta de sempre.</summary>
+    public static readonly string PastaDados = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CubeBin");
+
+    public static readonly string CaminhoLogCrash = Path.Combine(PastaDados, "crash.log");
 
     /// <summary>A janela principal, se já foi aberta alguma vez (fechar só esconde).</summary>
     public MainWindow? JanelaPrincipal => _desktop?.MainWindow as MainWindow;
@@ -52,6 +56,9 @@ public partial class App : Application
         desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
         desktop.Exit += (_, _) => AoSair();
 
+        var icone = TrayIconManager.CarregarIcone("avares://CubeBin/app.ico");
+        Dialogo.Configurar("CubeBin", icone);
+
         // Captura qualquer exceção não tratada na thread da tela e grava em crash.log antes de
         // encerrar — sem isso, uma falha na inicialização derruba o processo silenciosamente.
         Dispatcher.UIThread.UnhandledException += (_, args) =>
@@ -66,7 +73,7 @@ public partial class App : Application
 
         try
         {
-            IniciarServicos();
+            IniciarServicos(icone);
         }
         catch (Exception ex)
         {
@@ -83,12 +90,9 @@ public partial class App : Application
             AbrirJanelaPrincipal();
     }
 
-    private void IniciarServicos()
+    private void IniciarServicos(WindowIcon? icone)
     {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var caminhoConfig = Path.Combine(appData, "CubeBin", "config.json");
-
-        _configService = new ConfigService(caminhoConfig);
+        _configService = new ConfigService(Path.Combine(PastaDados, "config.json"));
         var config = _configService.CarregarOuCriarPadrao();
 
         // Sincroniza o registro do Windows com o que está salvo no config.json — cobre o caso de
@@ -105,21 +109,8 @@ public partial class App : Application
         if (GoogleDriveCredentials.EstaConfigurado)
             _ = TentarReconectarGoogleDriveAsync();
 
-        _organizadorService = new OrganizadorService(
-            _configService,
-            new BackupService(),
-            new ClassificadorService(),
-            new PendenciaService(),
-            _recallService,
-            _googleDriveService,
-            new IdleDetectionService(),
-            _notificationService);
-
-        _backgroundScheduler = new BackgroundScheduler(_configService, _organizadorService);
-        _backgroundScheduler.Iniciar();
-
-        // Camada 2 — agente de sugestões: desativado por padrão (config.AgenteAtivo), reaproveita a
-        // mesma checagem de ausência do resto do app. Nunca apaga nada sozinho, só sugere.
+        // Agente de sugestões: desativado por padrão (config.AgenteAtivo). Nunca apaga nada
+        // sozinho, só sugere.
         _agenteScheduler = new AgenteScheduler(
             _configService, new AgenteSugestaoService(), new SugestaoService(),
             new IdleDetectionService(), _notificationService);
@@ -131,32 +122,19 @@ public partial class App : Application
         _agenteScheduler.Iniciar();
 
         _trayIconManager = new TrayIconManager(
-            this,
-            abrirConfiguracoes: AbrirJanelaPrincipal,
-            executarAgora: () => _ = ExecutarOrganizacaoAgoraAsync(),
+            this, "CubeBin", icone,
+            abrir: AbrirJanelaPrincipal,
+            textoAcaoPrincipal: "Procurar o que limpar",
+            acaoPrincipal: ProcurarOQueLimpar,
             sair: Encerrar);
     }
 
-    /// <summary>
-    /// Dispara uma organização imediata a pedido do usuário — menu da bandeja ou botão na UI.
-    /// Não faz checagem de ausência nem espera a janela de cancelamento (ver OrganizadorService.ExecutarManualmenteAsync).
-    /// </summary>
-    public async Task ExecutarOrganizacaoAgoraAsync()
+    /// <summary>Pelo menu da bandeja: roda o agente agora e abre a janela nas Sugestões.</summary>
+    private void ProcurarOQueLimpar()
     {
-        if (_configService is null || _organizadorService is null) return;
-
-        try
-        {
-            var config = _configService.CarregarOuCriarPadrao();
-            await _organizadorService.ExecutarManualmenteAsync(config);
-        }
-        catch (Exception ex)
-        {
-            RegistrarCrash(ex);
-            DialogoCubeBin.Show(
-                $"Não foi possível concluir a organização.\n\nDetalhes em:\n{CaminhoLogCrash}",
-                "Erro ao organizar", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        AbrirJanelaPrincipal();
+        JanelaPrincipal?.IrParaSugestoes();
+        _agenteScheduler?.AnalisarAgora();
     }
 
     private void SincronizarInicializacaoComWindows(AppConfig config)
@@ -191,8 +169,7 @@ public partial class App : Application
         if (_desktop is null) return;
 
         var janela = JanelaPrincipal ?? new MainWindow(
-            _configService!, _notificationService!, _organizadorService!, _inicializacaoService,
-            _recallService, _googleDriveService!, ExecutarOrganizacaoAgoraAsync);
+            _configService!, _notificationService!, _inicializacaoService, _googleDriveService!);
         _desktop.MainWindow = janela;
         janela.Show();
         if (janela.WindowState == WindowState.Minimized)
@@ -204,7 +181,6 @@ public partial class App : Application
 
     private void AoSair()
     {
-        _backgroundScheduler?.Parar();
         _agenteScheduler?.Parar();
         _trayIconManager?.Dispose();
     }
@@ -213,12 +189,8 @@ public partial class App : Application
     {
         try
         {
-            var diretorio = Path.GetDirectoryName(CaminhoLogCrash);
-            if (!string.IsNullOrEmpty(diretorio))
-                Directory.CreateDirectory(diretorio);
-
-            File.AppendAllText(CaminhoLogCrash,
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {ex}\n\n");
+            Directory.CreateDirectory(PastaDados);
+            File.AppendAllText(CaminhoLogCrash, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {ex}\n\n");
         }
         catch
         {

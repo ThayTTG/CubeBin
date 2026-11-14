@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    O que os dois apps da família usam igual, sem nada de tela: mover arquivos com segurança,
+    registro em CSV antes de mexer, saber se a pessoa está longe do computador, abrir junto com o
+    Windows, a conta dos horários e a leitura do config antigo da versão 2.x.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Comum</RootNamespace>
+  </PropertyGroup>
+
+</Project>

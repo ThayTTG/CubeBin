@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    CubeBin 2: a mesma lógica da versão 1 (toda no CubeBin.Core), com a interface em
-    Avalonia + NokyLabs.UI (o Kit NokyLabs, com o vermelho do CubeBin).
+    CubeBin 3: a faxina e a nuvem (sugestões, apagar com registro, Cubos no Google Drive), com a
+    interface em Avalonia + NokyLabs.UI (o Kit NokyLabs, com o vermelho do CubeBin). A organização
+    de arquivos, que vivia aqui até a 2.x, virou um app à parte (src/Organizador.App).
   -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -17,7 +18,7 @@
     <AssemblyName>CubeBin</AssemblyName>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>2.0.0</Version>
+    <Version>3.0.0</Version>
     <Product>CubeBin</Product>
     <AssemblyTitle>CubeBin</AssemblyTitle>
     <Company>NokyLabs</Company>
@@ -28,14 +29,15 @@
     <PackageReference Include="Avalonia.Desktop" Version="11.3.*" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.*" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.*" />
-    <!-- As tabelas (regras, pendências, histórico...). -->
+    <!-- As tabelas (sugestões, lista do Deletar, pastas analisadas). -->
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.*" />
-    <!-- Toasts nativos do Windows 10/11 (aviso de início com "Cancelar" e resumo final). -->
+    <!-- Toasts nativos do Windows 10/11 (avisos de análise, exclusão e backup). -->
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CubeBin.Core\CubeBin.Core.csproj" />
+    <ProjectReference Include="..\Comum.UI\Comum.UI.csproj" />
     <!-- O Kit NokyLabs (submódulo Git em lib/NokyLabs.UI). -->
     <ProjectReference Include="..\..\lib\NokyLabs.UI\src\NokyLabs.UI\NokyLabs.UI.csproj" />
   </ItemGroup>

@@ -1,4 +1,5 @@
 using Avalonia.Threading;
+using Comum;
 using CubeBin.Core.Models;
 using CubeBin.Core.Services;
 
@@ -7,8 +8,8 @@ namespace CubeBin.App;
 /// <summary>
 /// Dispara o AgenteSugestaoService N vezes por dia (config.AgenteExecucoesPorDia), só quando o
 /// agente está ativo (config.AgenteAtivo — desativado por padrão) e o usuário está ausente pelo
-/// mesmo tempo já configurado para o resto do app (config.TempoAusenciaMinutos). Mesma filosofia
-/// de agendamento do BackgroundScheduler, com sua própria cadência independente.
+/// tempo configurado em Ajustes (config.TempoAusenciaMinutos). Mesma conta de horários do
+/// organizador (Comum.Agendamento), com a sua própria cadência.
 /// </summary>
 public class AgenteScheduler
 {
@@ -69,12 +70,16 @@ public class AgenteScheduler
 
             _horariosJaExecutadosHoje.Add(horario);
 
-            // Mesma janela de "usuário ausente" já usada pelo resto do app.
+            // Só analisa sozinho com a pessoa longe do computador.
             if (!_idleDetectionService.UsuarioEstaAusente(config.TempoAusenciaMinutos)) continue;
 
             ExecutarAnalise(config);
         }
     }
+
+    /// <summary>Análise imediata, a pedido da pessoa (menu da bandeja). Ignora o "agente
+    /// ativo" e a ausência: o próprio clique é o pedido.</summary>
+    public void AnalisarAgora() => ExecutarAnalise(_configService.CarregarOuCriarPadrao());
 
     private void ExecutarAnalise(AppConfig config)
     {
@@ -97,20 +102,6 @@ public class AgenteScheduler
     }
 
     /// <summary>Calcula os N horários do dia, espaçados em 24h/N a partir do horário de início.</summary>
-    public static List<TimeOnly> ObterHorariosDoDia(int execucoesPorDia, TimeOnly horarioInicio)
-    {
-        var n = Math.Max(1, execucoesPorDia);
-        var intervaloMinutos = (24.0 * 60.0) / n;
-
-        var horarios = new List<TimeOnly>();
-        var minutosInicio = horarioInicio.ToTimeSpan().TotalMinutes;
-
-        for (var i = 0; i < n; i++)
-        {
-            var minutos = (minutosInicio + i * intervaloMinutos) % (24 * 60);
-            horarios.Add(TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(minutos)));
-        }
-
-        return horarios;
-    }
+    public static List<TimeOnly> ObterHorariosDoDia(int execucoesPorDia, TimeOnly horarioInicio) =>
+        Agendamento.ObterHorariosDoDia(execucoesPorDia, horarioInicio);
 }

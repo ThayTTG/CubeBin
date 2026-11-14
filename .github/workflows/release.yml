@@ -1,6 +1,7 @@
 name: Build e Release
 
-# Lança uma versão nova do CubeBin.
+# Lança uma versão nova do CubeBin (só ele: o organizador, que mora em src/Organizador.*, ainda
+# não tem lançamento próprio — ele ganha repositório e lançamento quando tiver nome).
 #
 # Como disparar:
 #   • enviar qualquer commit para o branch "release"  → a tag vem do <Version> do CubeBin.App.csproj
@@ -85,7 +86,7 @@ jobs:
           }
 
       - name: Testes
-        run: dotnet test tests/CubeBin.Tests -c Release
+        run: dotnet test CubeBin.sln -c Release
 
       - name: Publicar (win-x64, arquivo único)
         run: >
@@ -117,7 +118,7 @@ jobs:
             ${{ steps.notas.outputs.texto }}
             <!-- /novidades -->
 
-            Organiza suas pastas por tipo de arquivo, guarda um backup de tudo e libera espaço com segurança.
+            Libera espaço sem perder nada: sugere o que limpar, apaga com registro e guarda cópias no Google Drive antes de apagar.
 
             **Como instalar**
             1. Baixe o `CubeBin-win-x64.zip` abaixo (ou instale pelo NokyLabs Launcher)

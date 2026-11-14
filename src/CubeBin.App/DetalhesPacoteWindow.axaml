@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="CubeBin.App.DetalhesPacoteWindow"
         Title="Detalhes do pacote" Height="560" Width="700" MinHeight="420" MinWidth="560"
-        Icon="/app.ico" ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
   <DockPanel Margin="24">
     <!-- Cabeçalho: cubo do pacote + nome, data e onde está no Drive -->
     <DockPanel DockPanel.Dock="Top" Margin="0,0,0,20">
