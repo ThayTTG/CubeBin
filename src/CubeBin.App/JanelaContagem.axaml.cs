@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using CubeBin.App.Interface;
 
 namespace CubeBin.App;
 
@@ -14,11 +15,15 @@ public partial class JanelaContagem : Window
     private readonly TaskCompletionSource<bool> _resposta = new();
     private int _restantes;
 
-    public JanelaContagem() : this(60) { }
+    public JanelaContagem() : this(60, 0) { }
 
-    public JanelaContagem(int segundos)
+    private readonly int _quantidade;
+
+    public JanelaContagem(int segundos, int quantidade)
     {
         InitializeComponent();
+        TemaJanelaEscura.Aplicar(this);
+        _quantidade = quantidade;
         Title = InfoApp.Nome;
 
         _restantes = Math.Max(1, segundos);
@@ -46,16 +51,17 @@ public partial class JanelaContagem : Window
     }
 
     /// <summary>Mostra a janela e espera: true se o usuário cancelou, false se o tempo acabou.</summary>
-    public static Task<bool> MostrarAsync(int segundos)
+    public static Task<bool> MostrarAsync(int segundos, int quantidade)
     {
-        var janela = new JanelaContagem(segundos);
+        var janela = new JanelaContagem(segundos, quantidade);
         janela.Show();
         return janela._resposta.Task;
     }
 
     private void AtualizarTexto()
     {
-        TxtContagem.Text = $"O {InfoApp.Nome} vai organizar as suas pastas em {_restantes} s. " +
+        var quantos = _quantidade > 0 ? $"{_quantidade} arquivo(s)" : "seus arquivos";
+        TxtContagem.Text = $"O {InfoApp.Nome} vai organizar {quantos} em {_restantes} s. " +
                            "Se você estiver usando o computador agora, clique em Cancelar.";
         BarraContagem.Value = BarraContagem.Maximum - _restantes;
     }

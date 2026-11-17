@@ -1,17 +1,18 @@
+using System.Globalization;
+
 namespace CubeBin.Core.Plataforma;
 
-/// <summary>Formata um tamanho em bytes de forma legível (KB/MB/GB), reaproveitado entre o
-/// agendador do agente e a UI, para não duplicar a mesma lógica em dois lugares.</summary>
+/// <summary>Tamanho legível no formato brasileiro ("1,5 GB"), igual em qualquer idioma do sistema.</summary>
 public static class FormatarBytes
 {
-    public static string Formatar(long bytes)
+    public static string Formatar(long bytes) => bytes switch
     {
-        return bytes switch
-        {
-            >= 1_073_741_824 => $"{bytes / 1_073_741_824.0:F1} GB",
-            >= 1_048_576 => $"{bytes / 1_048_576.0:F1} MB",
-            >= 1_024 => $"{bytes / 1_024.0:F1} KB",
-            _ => $"{bytes} B"
-        };
-    }
+        >= 1_073_741_824 => Numero(bytes / 1_073_741_824.0) + " GB",
+        >= 1_048_576 => Numero(bytes / 1_048_576.0) + " MB",
+        >= 1_024 => Numero(bytes / 1_024.0) + " KB",
+        _ => $"{bytes} B",
+    };
+
+    private static string Numero(double valor) =>
+        valor.ToString("F1", CultureInfo.InvariantCulture).Replace('.', ',');
 }

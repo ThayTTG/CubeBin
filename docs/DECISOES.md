@@ -78,3 +78,98 @@ propósito: se ficassem lá, o próprio CubeBin acabaria organizando-os.
 `PastasDoSistema.Substituto` permite trocar a descoberta das pastas do sistema. A classe de teste
 `PastaDeTeste` aponta as seis pastas para dentro de uma pasta temporária nova e só apaga o que está
 dentro dela. Os testes rodam em sequência (`xunit.runner.json`), porque o substituto é estático.
+
+---
+
+## Versão 1.0 — Organizar Arquivos
+
+### 2.1 Quais pastas são organizadas
+O PRD diz "Documentos, Área de Trabalho, Downloads etc." como pastas monitoradas, e Imagens, Vídeos,
+Músicas e Documentos como destinos. As seis pastas padrão aparecem na configuração, mas só
+**Documentos, Área de Trabalho e Downloads** vêm com "organizar" ligado (é onde os arquivos se
+acumulam). Imagens, Vídeos e Músicas podem ser ligadas pela pessoa.
+
+### 2.2 Arquivo que já está na pasta certa não se mexe
+Um PDF em Documentos (ou em qualquer subpasta de Documentos) fica onde está. Isso também protege
+quem já organizou subpastas à mão: com "organizar subpastas" ligado, `Documentos/Trabalho/a.pdf`
+**não** é "achatado" para `Documentos/a.pdf`.
+
+### 2.3 Prefixos de conflito
+PRD: `Doc-Texto`, `Desk-Texto`. Prefixos usados: Documentos `Doc`, Área de Trabalho `Desk`, Downloads
+`Down`, Imagens `Img`, Vídeos `Vid`, Músicas `Mus`; pastas personalizadas usam as 4 primeiras letras
+do nome (editável no JSON, campo `prefixo`). Se `Doc-Texto.pdf` também existir, vira
+`Doc-Texto (2).pdf`. Na restauração vale a mesma regra, com o prefixo da pasta de onde o arquivo está
+saindo (ex.: `Img-foto.png` volta para Downloads se lá já houver outro `foto.png`).
+
+### 2.4 Formato do registro: JSON Lines
+O PRD pede "JSON gravado arquivo por arquivo". Um JSON único (uma lista) teria de ser regravado
+inteiro a cada arquivo — e, se o computador desligasse na hora, o arquivo ficaria quebrado. Por isso
+o registro é **JSON Lines** (`.jsonl`): uma linha JSON por evento, gravada direto no disco
+(`WriteThrough` + `Flush`). Cada arquivo tem uma linha **antes** de ser mexido (origem → destino) e
+outra **depois** (deu certo ou não). O leitor ignora uma última linha cortada. O Desfazer não depende
+do "depois": ele procura o arquivo no destino e, se estiver lá, devolve.
+
+### 2.5 Roadmap fala em "backup CSV" na 1.0
+O roadmap (seção 9) ainda diz "backup CSV", mas a seção 6 e o pedido dizem que o JSON **substitui**
+o CSV. Segui o JSON (não muda o comportamento para a pessoa, só o formato).
+
+### 2.6 Arquivos sem extensão e extensões sem pasta
+Arquivos sem extensão ficam onde estão e não entram na lista de "sem pasta" (não dá para criar regra
+útil para eles). Extensões sem pasta são anotadas em `extensoesSemPasta` no JSON e aparecem na tela
+inicial e na tela de regras até a pessoa decidir.
+
+### 2.7 Executáveis e atalhos
+"Executável" é decidido pela **extensão** (`.exe`, `.msi`, `.bat`, `.sh`, `.appimage`...; lista no
+JSON). O bit de execução do Linux não é usado: em pendrives e partições NTFS todo arquivo tem esse bit,
+e o CubeBin deixaria de organizar tudo.
+
+### 2.8 Arquivo em uso
+Windows: o arquivo é aberto sem compartilhamento; se o Windows recusar, alguém está usando. Linux:
+não existe essa trava, então o CubeBin olha `/proc/<processo>/fd` (só os processos do próprio
+usuário). A conferência é feita na prévia **e de novo** logo antes de mover cada arquivo.
+
+### 2.9 "Alterado nos últimos minutos"
+5 minutos por padrão (`minutosSemAlteracao`). Usa a data de modificação e, quando o sistema informa,
+a de criação (um download recém-terminado pode ter a data de modificação antiga do servidor).
+
+### 2.10 OneDrive
+Uma pasta é considerada do OneDrive pelas variáveis `OneDrive*` do Windows ou por um trecho do
+caminho começando com "OneDrive". Com 100 arquivos ou mais para mover (`limiteAvisoOneDriveArquivos`),
+a confirmação pede um "Entendi" extra; no modo automático, que não tem prévia, esses arquivos ficam
+para quando a pessoa abrir o CubeBin.
+
+### 2.11 Modo automático
+- **Desligado na primeira vez** (opção mais segura; a pessoa liga na tela inicial).
+- A cada 30 s o CubeBin olha há quanto tempo a pessoa não mexe no computador. Ausente há T minutos
+  (padrão 10) → prévia interna → aviso com 60 s para cancelar → organiza → aviso de fim.
+- **Uma tentativa por ausência** e no máximo uma a cada 4 h (`horasEntreExecucoes`). Se não houver
+  nada para mover, não aparece aviso nenhum.
+- Depois dos 60 s, o plano é montado **de novo** (arquivos podem ter sido abertos nesse meio-tempo).
+- Onde o sistema não informa a ausência (Linux com Sway/Hyprland), vale só o intervalo — sempre com o
+  aviso de 60 s antes.
+- Métricas do PRD 10 ficam no JSON: `execucoesAutomaticas` e `execucoesCanceladas`.
+- Aviso de início: toast com "Cancelar" no Windows (se o toast falhar, aparece a janelinha de
+  contagem); janelinha de contagem no Linux (aparece em qualquer ambiente, ao contrário dos botões
+  em notificação).
+
+### 2.12 Relatórios
+Ficam em `Relatórios/` dentro da pasta de dados do CubeBin, com o nome do PRD
+(`Relatório 2026-11-17.html`); a segunda execução do dia vira `Relatório 2026-11-17 (2).html`. O
+modelo HTML vai **dentro do programa** (recurso embutido). Funciona offline, com tema claro/escuro.
+
+### 2.13 Janela, bandeja e uma instância só
+Aberto pela pessoa, o CubeBin mostra a janela; pelo "abrir junto com o sistema" ele começa só na
+bandeja (`--bandeja`). Fechar a janela só a esconde (o automático continua). Só um CubeBin roda por
+vez (mutex): abrir de novo mostra a janela do que já está aberto. Isso também garante que nunca haja
+duas organizações ao mesmo tempo. Dentro do app, uma trava impede que o manual e o automático rodem
+juntos.
+
+### 2.14 Configuração editada à mão
+Se o JSON não tiver a chave `regras`, valem as regras padrão; uma lista vazia (`"regras": []`) é
+respeitada. As seis pastas padrão sempre voltam se forem apagadas do JSON. Se o JSON estiver quebrado,
+o CubeBin guarda uma cópia (`configuracoes.json.quebrado-<data>`), volta ao padrão e avisa na tela inicial.
+
+### 2.15 Pasta de dados num Linux novo
+Num Linux em que `~/.local/share` ainda não existe, o .NET devolvia um caminho vazio (os dados iriam
+para a pasta atual). A pasta agora é pedida com `SpecialFolderOption.Create`, com uma segunda rede de
+segurança (bug encontrado nos testes com Xvfb).

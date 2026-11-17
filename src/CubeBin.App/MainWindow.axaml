@@ -1,6 +1,81 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="using:NokyLabs.UI"
         x:Class="CubeBin.App.MainWindow"
-        Title="CubeBin" Width="1100" Height="760" Icon="/app.ico">
-  <TextBlock Text="CubeBin" Classes="h1" Margin="32" />
+        Title="CubeBin" Width="1120" Height="760" MinWidth="960" MinHeight="640"
+        Icon="/app.ico" WindowStartupLocation="CenterScreen">
+  <!--
+    Estrutura no padrão do NokyLabs Launcher: menu lateral (cabeçalho do app, navegação, créditos)
+    e a página à direita. Cada página é um UserControl em Telas/.
+  -->
+  <Grid ColumnDefinitions="232,*">
+
+    <!-- ===================== Menu lateral ===================== -->
+    <Border Background="{DynamicResource SidebarBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+      <DockPanel Margin="14,20,14,14">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="6,0,0,26">
+          <Border Width="42" Height="42" CornerRadius="13">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Offset="0" Color="#A32D26" />
+                <GradientStop Offset="1" Color="#F4A7A1" />
+              </LinearGradientBrush>
+            </Border.Background>
+            <Viewbox Width="24" Height="24">
+              <Path Classes="icon" Data="{StaticResource IconeCubo}" Stroke="White" StrokeThickness="2.4" />
+            </Viewbox>
+          </Border>
+          <StackPanel VerticalAlignment="Center" Spacing="1">
+            <TextBlock Text="CubeBin" FontSize="18" FontWeight="Bold" />
+            <TextBlock Text="NokyLabs" Classes="muted" />
+          </StackPanel>
+        </StackPanel>
+
+        <ui:CreditsCard x:Name="Creditos" DockPanel.Dock="Bottom" AppName="CubeBin" />
+
+        <StackPanel Spacing="3">
+          <TextBlock Text="MENU" Classes="caps" Margin="12,0,0,8" />
+          <RadioButton x:Name="NavInicio" Classes="nav" GroupName="nav" Tag="inicio" IsChecked="True">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeInicio}" /></Viewbox>
+              <TextBlock Text="Início" VerticalAlignment="Center" />
+            </StackPanel>
+          </RadioButton>
+          <RadioButton x:Name="NavOrganizar" Classes="nav" GroupName="nav" Tag="organizar">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeOrganizar}" /></Viewbox>
+              <TextBlock Text="Organizar Arquivos" VerticalAlignment="Center" />
+            </StackPanel>
+          </RadioButton>
+          <RadioButton x:Name="NavLiberar" Classes="nav" GroupName="nav" Tag="liberar">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeDisco}" /></Viewbox>
+              <TextBlock Text="Liberar Espaço" VerticalAlignment="Center" />
+            </StackPanel>
+          </RadioButton>
+          <RadioButton x:Name="NavCubos" Classes="nav" GroupName="nav" Tag="cubos">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeCubo}" /></Viewbox>
+              <TextBlock Text="Cubos" VerticalAlignment="Center" />
+            </StackPanel>
+          </RadioButton>
+          <RadioButton x:Name="NavConfiguracoes" Classes="nav" GroupName="nav" Tag="configuracoes">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeEngrenagem}" /></Viewbox>
+              <TextBlock Text="Configurações" VerticalAlignment="Center" />
+            </StackPanel>
+          </RadioButton>
+          <RadioButton x:Name="NavSobre" Classes="nav" GroupName="nav" Tag="sobre">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <Viewbox Width="18" Height="18"><Path Classes="icon" Data="{StaticResource IconeInfo}" /></Viewbox>
+              <TextBlock Text="Sobre" VerticalAlignment="Center" />
+            </StackPanel>
+          </RadioButton>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <!-- ===================== Página ===================== -->
+    <ContentControl x:Name="Pagina" Grid.Column="1" />
+  </Grid>
 </Window>

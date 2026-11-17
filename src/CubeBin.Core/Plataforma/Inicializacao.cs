@@ -36,17 +36,17 @@ public class Inicializacao
         return File.Exists(CaminhoAutostart);
     }
 
-    public void Habilitar(string caminhoExecutavel)
+    public void Habilitar(string caminhoExecutavel, string? argumentos = null)
     {
         if (OperatingSystem.IsWindows())
         {
             using var chave = Registry.CurrentUser.CreateSubKey(CaminhoChaveRun, writable: true);
-            chave.SetValue(_nomeValor, $"\"{caminhoExecutavel}\"");
+            chave.SetValue(_nomeValor, $"\"{caminhoExecutavel}\"" + (argumentos is null ? "" : " " + argumentos));
             return;
         }
 
         Directory.CreateDirectory(PastaAutostart);
-        File.WriteAllText(CaminhoAutostart, MontarAtalhoAutostart(_nomeValor, caminhoExecutavel),
+        File.WriteAllText(CaminhoAutostart, MontarAtalhoAutostart(_nomeValor, caminhoExecutavel, argumentos),
             new UTF8Encoding(false));
     }
 
@@ -73,7 +73,7 @@ public class Inicializacao
     }
 
     /// <summary>O conteúdo do .desktop de autostart (público para os testes).</summary>
-    public static string MontarAtalhoAutostart(string nomeDoApp, string caminhoExecutavel)
+    public static string MontarAtalhoAutostart(string nomeDoApp, string caminhoExecutavel, string? argumentos = null)
     {
         var pasta = Path.GetDirectoryName(caminhoExecutavel) ?? "";
         var icone = Path.Combine(pasta, "icon.png");
@@ -82,7 +82,7 @@ public class Inicializacao
         texto.Append("[Desktop Entry]\n");
         texto.Append("Type=Application\n");
         texto.Append($"Name={nomeDoApp}\n");
-        texto.Append($"Exec={EscaparExec(caminhoExecutavel)}\n");
+        texto.Append($"Exec={EscaparExec(caminhoExecutavel)}{(argumentos is null ? "" : " " + argumentos)}\n");
         texto.Append($"Path={pasta}\n");
         if (File.Exists(icone))
             texto.Append($"Icon={icone}\n");

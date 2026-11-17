@@ -1,8 +1,8 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!--
-    O visual que os dois apps da família dividem por cima do Kit NokyLabs: textos das páginas,
-    cartões, botões com ícone, tabelas, árvore e divisórias. Entra no App.axaml de cada app logo
+    O visual do CubeBin por cima do Kit NokyLabs: textos das páginas, cartões, blocos de pasta,
+    bloquinhos de extensão, etapas dos fluxos, botões com ícone e tabelas. Entra no App.axaml logo
     depois do <ui:NokyTheme />.
   -->
   <!-- ===================== Textos das páginas ===================== -->
@@ -72,6 +72,136 @@
   <Style Selector="Border.pilula">
     <Setter Property="CornerRadius" Value="999" />
     <Setter Property="Padding" Value="10,4" />
+  </Style>
+
+  <!-- ===================== Blocos (pastas, destinos, ações) ===================== -->
+  <Style Selector="Border.bloco">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="16" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.15" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.bloco.clicavel">
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Border.bloco.clicavel:pointerover, Border.bloco.alvo">
+    <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <!-- Bloco em destaque (a opção recomendada) -->
+  <Style Selector="Border.bloco.destaque">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
+  <Style Selector="Border.bloco.selecionado">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="Border.bloco.apagado">
+    <Setter Property="Opacity" Value="0.5" />
+  </Style>
+  <!-- Bloco de área para soltar ("Nova pasta") -->
+  <Style Selector="Border.soltar">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="16" />
+  </Style>
+  <Style Selector="Border.soltar.alvo">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
+
+  <!-- Ícone redondo de um bloco (fundo suave na cor do app) -->
+  <Style Selector="Border.iconeBloco">
+    <Setter Property="Width" Value="40" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
+  <Style Selector="Border.iconeBloco Path.icon">
+    <Setter Property="Stroke" Value="{DynamicResource AccentTextBrush}" />
+  </Style>
+
+  <!-- ===================== Bloquinhos de extensão (arrastáveis) ===================== -->
+  <Style Selector="Border.ext">
+    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="8,3" />
+    <Setter Property="Margin" Value="0,0,6,6" />
+    <Setter Property="Cursor" Value="SizeAll" />
+  </Style>
+  <Style Selector="Border.ext:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="Border.ext > TextBlock">
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+  </Style>
+  <Style Selector="Border.ext.novo">
+    <Setter Property="Background" Value="{DynamicResource WarningSoftBrush}" />
+    <Setter Property="BorderBrush" Value="#55FBBF24" />
+  </Style>
+
+  <!-- ===================== Etapas de um fluxo (1 Prévia · 2 Confirmação...) ===================== -->
+  <Style Selector="Border.etapa">
+    <Setter Property="CornerRadius" Value="999" />
+    <Setter Property="Padding" Value="12,5" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Border.etapa > TextBlock">
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+  </Style>
+  <Style Selector="Border.etapa.ativa">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="Border.etapa.ativa > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+  </Style>
+  <Style Selector="Border.etapa.feita > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+  </Style>
+
+  <!-- Número grande de um resumo -->
+  <Style Selector="TextBlock.numero">
+    <Setter Property="FontSize" Value="30" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+  </Style>
+  <Style Selector="TextBlock.perigo">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+  <Style Selector="TextBlock.sucesso">
+    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+  </Style>
+  <!-- Linha de lista simples (arquivo · pasta) -->
+  <Style Selector="Border.linha">
+    <Setter Property="Padding" Value="0,7" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.falha">
+    <Setter Property="Background" Value="{DynamicResource DangerSoftBrush}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="Margin" Value="0,0,0,6" />
   </Style>
 
   <!-- ===================== Botões com ícone ===================== -->

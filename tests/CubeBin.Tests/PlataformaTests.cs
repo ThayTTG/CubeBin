@@ -114,3 +114,12 @@ public class AutostartLinuxTests
         Assert.False(servico.EstaHabilitado());
     }
 }
+
+public class AmbienteTests
+{
+    [Fact]
+    public void PastaDeDadosEhSempreUmCaminhoCompleto()
+    {
+        Assert.True(Path.IsPathRooted(CubeBin.Core.Ambiente.PastaDadosPadrao()));
+    }
+}
