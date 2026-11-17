@@ -244,3 +244,56 @@ As seis seções existem desde a 1.2; Nuvem e Agente ganham conteúdo na 2.0.
 Filtros por tipo (organizados, Lixeira, nuvem, apagados) e período (sempre, 7 e 30 dias); resumo com
 quantidade de Cubos, arquivos organizados, espaço liberado e contagem por tipo. Os detalhes de um
 Cubo aparecem em cima da lista, com Restaurar, Abrir relatório e Ver registro (JSON).
+
+---
+
+## Versão 2.0 — Nuvem e agente
+
+### 5.1 A nuvem fica atrás de uma interface
+`IArmazenamentoNuvem` tem duas implementações: `GoogleDriveNuvem` (a real) e `NuvemLocal` (uma pasta).
+A segunda deixa testar o fluxo inteiro sem internet e sem conta — os testes automáticos usam ela, e
+o app também, com a variável `CUBEBIN_NUVEM_DE_TESTE=<pasta>` (modo de teste, avisado na tela).
+
+### 5.2 Login e token
+Escopo `drive.file` (o mais restrito: o CubeBin só vê o que ele criou — na prática, a pasta CubeBin).
+O login abre o navegador só no clique em "Conectar conta". Ao abrir o app, o CubeBin usa o token
+guardado **sem abrir o navegador**; se o token tiver vencido, o envio é adiado com o aviso "a
+autorização do Google expirou". Token: DPAPI no Windows, chaveiro do sistema no Linux (já existia).
+
+### 5.3 Pacote
+Um `.zip` por envio, chamado `Cubo AAAA-MM-DD HH-mm-ss.zip` (a data do envio; os segundos evitam dois
+pacotes com o mesmo nome). Dentro, cada item fica numa pasta com o nome da pasta de origem
+(`Downloads/foto.jpg`), para o pacote fazer sentido mesmo se aberto à mão pelo Drive.
+
+### 5.4 Conferência de integridade
+Depois do envio, o CubeBin pede ao Drive o tamanho e o MD5 que **o próprio Drive** calculou e compara
+com o pacote local. Se o Drive não informar o MD5, o CubeBin baixa o pacote de volta e confere. Só
+então os arquivos locais são apagados. Qualquer diferença = envio adiado, nada apagado.
+
+### 5.5 Adiamento
+Sem internet, Drive cheio (conferido **antes** de enviar, pelo espaço livre da conta, e também pelo
+erro do Drive), autorização vencida ou pacote diferente: o Cubo fica como "Envio adiado", com o
+motivo e o botão "Tentar enviar de novo" (que usa os mesmos arquivos, se ainda existirem). O pacote
+temporário é apagado; os arquivos originais ficam onde estavam. Não há reenvio automático em segundo
+plano (mais simples e previsível: a pessoa decide quando tentar de novo).
+
+### 5.6 Índice no Drive
+`CubeBin/indice.json` tem a lista dos Cubos enviados (sem caminhos locais), com o resumo por tipo e os
+ids do pacote, do registro e do relatório. Ao conectar (ou abrir o app já conectado), o CubeBin junta
+ao índice local os Cubos que não conhece — a tela de Cubos mostra tudo sem baixar pacote nenhum, e dá
+para restaurar em outro computador (o registro vem da nuvem).
+
+### 5.7 Restaurar da nuvem
+Baixa o pacote, devolve cada item ao lugar de origem com a regra de conflito (prefixo `Nuvem-`, nunca
+sobrescreve) e anota no registro. O pacote **continua no Drive** como cópia de segurança; quem quiser
+apagar, apaga pelo próprio Drive.
+
+### 5.8 "Agente de IA" = regras locais
+O PRD chama de "agente de IA". Para não depender de internet, de chave de API nem mandar nomes de
+arquivos para fora, o agente é feito de **regras locais** (as do CubeBin antigo, revisadas):
+duplicados por conteúdo (SHA-256; fica o mais antigo), temporários parados há 30 dias, arquivos de
+500 MB+ sem uso há 180 dias (tudo ajustável). Ele respeita as proteções (projetos, atalhos,
+programas, ocultos, abertos, recentes) e só olha as pastas do CubeBin. Desligado por padrão; quando
+ligado, analisa com a pessoa ausente, no máximo uma vez por dia, com prioridade baixa de CPU, e avisa
+por notificação se achar algo. As sugestões aparecem dentro do Liberar Espaço; nada sai sem a pessoa
+escolher o destino na tela "Para onde vão?".

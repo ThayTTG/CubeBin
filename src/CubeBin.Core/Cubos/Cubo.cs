@@ -57,6 +57,10 @@ public class Cubo
     /// <summary>O envio não pôde ser feito (sem internet, Drive cheio...): os arquivos continuam no computador.</summary>
     public bool EnvioAdiado { get; set; }
     public string? MotivoAdiamento { get; set; }
+    /// <summary>Cópias do registro e do relatório na pasta CubeBin/Relatórios do Drive (para restaurar
+    /// mesmo em outro computador ou depois de reinstalar).</summary>
+    public string? IdRegistroNuvem { get; set; }
+    public string? IdRelatorioNuvem { get; set; }
 
     [JsonIgnore]
     public bool PodeRestaurar => Tipo != TipoCubo.ApagadoDeVez && !Restaurado && !EnvioAdiado;

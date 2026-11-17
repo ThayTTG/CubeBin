@@ -96,8 +96,9 @@ public partial class App : Application
         SincronizarInicializacao(config.Automacao.IniciarComOSistema);
         Servicos.Config.Alterada += c => SincronizarInicializacao(c.Automacao.IniciarComOSistema);
 
-        _agendador = new AgendadorAutomatico(Servicos, id => AbrirJanela("cubos", id));
+        _agendador = new AgendadorAutomatico(Servicos, id => AbrirJanela("cubos", id), () => AbrirJanela("liberar"));
         _agendador.Iniciar();
+        _ = Servicos.ReconectarNuvemAsync();
 
         _bandeja = new Bandeja(this, InfoApp.Nome, icone,
             abrir: () => AbrirJanela(),

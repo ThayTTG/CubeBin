@@ -66,14 +66,104 @@ public partial class TelaLiberar : UserControl, ITela
         MostrarEtapa(Etapa.Escolher);
         _ = PreencherPastasAsync();
         AtualizarEscolhidos();
-        AoMostrarEscolher?.Invoke(this);
+        PreencherSugestoes();
     }
 
-    /// <summary>Chamado ao mostrar a etapa Escolher (o agente da versão 2.0 usa para mostrar sugestões).</summary>
-    public static Action<TelaLiberar>? AoMostrarEscolher { get; set; }
+    // ===================== Sugestões do agente (PRD 5.5) =====================
 
-    /// <summary>O cartão das sugestões do agente (preenchido pela versão 2.0).</summary>
-    public Border CartaoDeSugestoes => CartaoSugestoes;
+    private void PreencherSugestoes()
+    {
+        var config = _servicos.Config.Carregar();
+        var grade = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
+        var icone = Ui.IconeDeBloco("IconeAgente", 40);
+        icone.Margin = new Thickness(0, 0, 14, 0);
+        icone.VerticalAlignment = VerticalAlignment.Top;
+        grade.Children.Add(icone);
+        var textos = new StackPanel { Spacing = 4 };
+        Grid.SetColumn(textos, 1);
+        grade.Children.Add(textos);
+        var acoes = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        Grid.SetColumn(acoes, 2);
+        grade.Children.Add(acoes);
+
+        var guardadas = _servicos.Sugestoes();
+        if (!config.Agente.Ligado && guardadas is not { Sugestoes.Count: > 0 })
+        {
+            textos.Children.Add(new TextBlock { Text = "Quer ajuda para achar o que liberar?", FontWeight = FontWeight.SemiBold });
+            textos.Children.Add(Ui.Texto("O agente de sugestões procura cópias repetidas, temporários esquecidos e arquivos grandes parados. Ele só sugere: quem decide é você.", "secondary"));
+            acoes.Children.Add(Ui.Botao("Ligar e analisar", "soft", "IconeAgente", async (_, _) =>
+            {
+                _servicos.Config.Alterar(c => c.Agente.Ligado = true);
+                await AnalisarEMostrarAsync();
+            }));
+        }
+        else
+        {
+            var r = guardadas;
+            if (r is null || r.Sugestoes.Count == 0)
+            {
+                textos.Children.Add(new TextBlock { Text = "O agente não tem sugestões agora", FontWeight = FontWeight.SemiBold });
+                textos.Children.Add(Ui.Texto(r is null ? "Ele ainda não analisou as pastas." : $"Última análise: {CartaoCubo.DataAmigavel(r.AnalisadoEm)}.", "secondary"));
+                acoes.Children.Add(Ui.Botao("Analisar agora", "soft", "IconeAtualizar", async (_, _) => await AnalisarEMostrarAsync()));
+            }
+            else
+            {
+                textos.Children.Add(new TextBlock { Text = $"O agente sugere liberar {FormatarBytes.Formatar(r.Bytes)}", FontWeight = FontWeight.SemiBold });
+                var resumo = string.Join(" · ", r.Sugestoes.GroupBy(x => x.Tipo).Select(g => g.Key switch
+                {
+                    CubeBin.Core.Agente.TipoSugestao.Duplicado => Ui.Plural(g.Count(), "cópia repetida", "cópias repetidas"),
+                    CubeBin.Core.Agente.TipoSugestao.TemporarioEsquecido => Ui.Plural(g.Count(), "temporário esquecido", "temporários esquecidos"),
+                    _ => Ui.Plural(g.Count(), "arquivo grande parado", "arquivos grandes parados"),
+                }));
+                textos.Children.Add(Ui.Texto(resumo + ". Nada foi apagado.", "secondary"));
+                var lista = new StackPanel { Spacing = 2, Margin = new Thickness(0, 8, 0, 0), IsVisible = false };
+                var marcados = new HashSet<string>();
+                foreach (var sugestao in r.Sugestoes.OrderByDescending(x => x.Tamanho).Take(60))
+                {
+                    var caixa = new CheckBox
+                    {
+                        Content = $"{sugestao.Nome} · {FormatarBytes.Formatar(sugestao.Tamanho)} — {sugestao.Motivo}",
+                        IsChecked = true,
+                    };
+                    ToolTip.SetTip(caixa, sugestao.Caminho);
+                    marcados.Add(sugestao.Caminho);
+                    caixa.IsCheckedChanged += (_, _) =>
+                    {
+                        if (caixa.IsChecked == true) marcados.Add(sugestao.Caminho);
+                        else marcados.Remove(sugestao.Caminho);
+                    };
+                    lista.Children.Add(caixa);
+                }
+                textos.Children.Add(lista);
+                Button? ver = null;
+                ver = Ui.Botao("Ver sugestões", "soft", "IconeLista", (_, _) =>
+                {
+                    lista.IsVisible = !lista.IsVisible;
+                    ver!.Content = lista.IsVisible ? "Esconder" : "Ver sugestões";
+                });
+                acoes.Children.Add(ver);
+                acoes.Children.Add(Ui.Botao("Liberar as escolhidas", "secondary", "IconeSetaDireita", (_, _) =>
+                {
+                    _escolhidos.Clear();
+                    AdicionarEscolhidos(marcados);
+                    BtnContinuarArquivos_Click(null, new RoutedEventArgs());
+                }));
+            }
+        }
+
+        var cartao = new Border { Child = grade };
+        cartao.Classes.Add("card");
+        CartaoSugestoes.Child = cartao;
+        CartaoSugestoes.IsVisible = true;
+    }
+
+    private async Task AnalisarEMostrarAsync()
+    {
+        CartaoSugestoes.Child = Ui.Aviso("O agente está olhando as pastas…", "", "IconeAgente");
+        try { await _servicos.AnalisarAgoraAsync(); }
+        catch (Exception ex) { App.RegistrarCrash(ex); }
+        PreencherSugestoes();
+    }
 
     // ===================== 1. Escolher =====================
 
@@ -235,7 +325,8 @@ public partial class TelaLiberar : UserControl, ITela
         var conectada = _servicos.NuvemConectada;
         BlocoNuvem.Classes.Set("apagado", !conectada);
         AvisoSemConta.IsVisible = !conectada;
-        TxtContaNuvem.Text = conectada ? $"Conta: {_servicos.Config.Carregar().Nuvem.ContaConectada}" : "";
+        var conta = _servicos.NuvemDeTeste is not null ? "pasta de teste" : _servicos.Config.Carregar().Nuvem.ContaConectada;
+        TxtContaNuvem.Text = conectada && conta is not null ? $"Conta: {conta}" : "";
         _destino = conectada ? DestinoLiberar.Nuvem : DestinoLiberar.Lixeira;
         if (_servicos.Lixeira is null && _destino == DestinoLiberar.Lixeira) _destino = DestinoLiberar.ApagarDeVez;
         BlocoLixeira.Classes.Set("apagado", _servicos.Lixeira is null);
@@ -379,7 +470,7 @@ public partial class TelaLiberar : UserControl, ITela
         };
         TxtConcluidoDetalhe.Text = r.Destino switch
         {
-            DestinoLiberar.Nuvem => "O Cubo está na pasta CubeBin do seu Google Drive. Para trazer de volta, use Restaurar.",
+            DestinoLiberar.Nuvem => "O pacote foi conferido e está na pasta CubeBin do seu Google Drive. Para trazer de volta, use Restaurar.",
             DestinoLiberar.Lixeira => "Mudou de ideia? Restaurar devolve tudo ao lugar (enquanto a Lixeira não for esvaziada).",
             _ => "Esses arquivos não podem ser restaurados.",
         };

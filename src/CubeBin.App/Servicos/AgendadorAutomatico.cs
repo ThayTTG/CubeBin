@@ -1,4 +1,5 @@
 using Avalonia.Threading;
+using CubeBin.Core.Agente;
 using CubeBin.Core.Organizar;
 using CubeBin.Core.Plataforma;
 
@@ -14,14 +15,16 @@ public sealed class AgendadorAutomatico
     private readonly ServicosApp _servicos;
     private readonly Ociosidade _ociosidade = new();
     private readonly Action<string?> _abrirCubo;
+    private readonly Action _abrirLiberar;
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(30) };
     private bool _jaTentouNestaAusencia;
     private bool _verificando;
 
-    public AgendadorAutomatico(ServicosApp servicos, Action<string?> abrirCubo)
+    public AgendadorAutomatico(ServicosApp servicos, Action<string?> abrirCubo, Action abrirLiberar)
     {
         _servicos = servicos;
         _abrirCubo = abrirCubo;
+        _abrirLiberar = abrirLiberar;
         _timer.Tick += async (_, _) => await VerificarAsync();
     }
 
@@ -44,6 +47,12 @@ public sealed class AgendadorAutomatico
             var ocioso = await Task.Run(_ociosidade.ObterTempoOcioso);
             Depurar($"ausência: {ocioso?.ToString() ?? "desconhecida"}, ligada: {config.Automacao.Ligada}, já tentou: {_jaTentouNestaAusencia}");
             if (OrganizacaoAutomatica.PessoaVoltou(ocioso)) _jaTentouNestaAusencia = false;
+
+            // O agente (estilo antivírus): analisa com a pessoa ausente, no máximo uma vez por dia. Só sugere.
+            var ausente = ocioso is null || ocioso.Value >= TimeSpan.FromMinutes(config.Automacao.MinutosDeAusencia);
+            if (ausente && !_servicos.Ocupado && AgenteSugestoes.DeveAnalisar(config.Agente, DateTime.Now))
+                await AnalisarAsync();
+
             if (_servicos.Ocupado || !OrganizacaoAutomatica.DeveTentar(config.Automacao, ocioso, DateTime.Now, _jaTentouNestaAusencia))
                 return;
 
@@ -58,6 +67,17 @@ public sealed class AgendadorAutomatico
         {
             _verificando = false;
         }
+    }
+
+    private async Task AnalisarAsync()
+    {
+        var anterior = _servicos.Sugestoes()?.Bytes ?? 0;
+        var resultado = await _servicos.AnalisarAgoraAsync();
+        Depurar($"agente: {resultado.Sugestoes.Count} sugestões");
+        if (resultado.Sugestoes.Count > 0 && resultado.Bytes > anterior)
+            _servicos.Avisos.AvisarFim("O agente do CubeBin tem sugestões",
+                $"Dá para liberar {CubeBin.Core.Plataforma.FormatarBytes.Formatar(resultado.Bytes)}. Nada foi apagado: abra o Liberar Espaço para ver e escolher.",
+                _abrirLiberar);
     }
 
     /// <summary>Uma organização automática completa (também usada pelo "Organizar agora" da bandeja

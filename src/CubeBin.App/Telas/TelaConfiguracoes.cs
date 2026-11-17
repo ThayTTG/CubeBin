@@ -15,7 +15,7 @@ namespace CubeBin.App.Telas;
 /// Configurações (PRD 5.6): duas colunas — o menu com as seis seções à esquerda (Pastas, Regras,
 /// Automação, Nuvem, Agente, Proteções) e o conteúdo à direita. Cada mudança salva sozinha.
 /// </summary>
-public class TelaConfiguracoes : UserControl, ITela
+public partial class TelaConfiguracoes : UserControl, ITela
 {
     public static readonly (string Id, string Nome, string Icone, string Descricao)[] Secoes =
     {
@@ -127,6 +127,8 @@ public class TelaConfiguracoes : UserControl, ITela
             "regras" => _regras = new PainelRegras(_servicos),
             "automacao" => Rolar(SecaoAutomacao()),
             "protecoes" => Rolar(SecaoProtecoes()),
+            "nuvem" => Rolar(SecaoNuvem()),
+            "agente" => Rolar(SecaoAgente()),
             _ when SecoesExtras.TryGetValue(id, out var criar) => Rolar(criar(_servicos, this)),
             _ => Rolar(Ui.Aviso("Chega na versão 2.0.", "", "IconeRelogio")),
         };

@@ -2,15 +2,19 @@
 
 Tudo o que muda no CubeBin, versão por versão. O texto de cada versão vira as notas do lançamento no GitHub e aparece em **Novidades**, no NokyLabs Launcher e no site.
 
-**Como usar:** anote as mudanças em `## [Não lançado]` enquanto trabalha. Na hora de lançar, é só aumentar o `<Version>` no `.csproj` e enviar para o branch `release`: o lançamento usa essa seção e ela vira a seção da versão sozinha.
-
-## [Não lançado]
-<!-- 3.0.0 — NÃO LANÇAR antes do organizador: sem ele publicado junto, quem atualizar fica sem a organização. -->
-- O CubeBin agora cuida só de liberar espaço com segurança: **Sugestões**, **Deletar**, **Cubos** e o login do Google Drive. A organização de arquivos virou um app separado da NokyLabs, que você instala pelo NokyLabs Launcher.
-- Suas configurações vêm junto: o agente de sugestões, o login do Google, os Cubos e o "abrir junto com o Windows" continuam como estavam. As pastas que eram organizadas viram as pastas que o agente analisa.
-- Nova tela **Ajustes**: escolha em quais pastas o agente procura o que limpar, quanto tempo longe do computador ele espera e onde ficam os registros do que foi apagado (com um botão para abrir essa pasta).
-- No menu do ícone perto do relógio, "Organizar agora" virou **Procurar o que limpar**: roda o agente na hora e abre as Sugestões.
-- Os registros em CSV do que foi apagado agora ficam numa pasta só deles ("registros"), separados do histórico da organização.
+**Como usar:** anote as mudanças em `## [Não lançado]
+<!-- 3.0.0 — a reconstrução a partir do PRD. As notas detalhadas de cada etapa estão em docs/notas/. -->
+- **Um CubeBin só, com dois módulos:** Organizar Arquivos e Liberar Espaço. O app volta a ser um (o Organizador separado deixou de existir).
+- **Organizar Arquivos funciona de cara:** imagens para Imagens, vídeos para Vídeos, áudios para Músicas e documentos para Documentos, nas pastas que o Windows (ou o Linux) informa. Sem pasta temporária: cada arquivo vai direto para o lugar certo.
+- **Sempre dá para voltar:** antes de mexer em cada arquivo, o CubeBin anota de onde ele saiu (registro em JSON, no lugar do CSV). Desfazer e Restaurar devolvem tudo ao lugar.
+- **Você confere antes:** o "Organizar agora" mostra a prévia, pede confirmação, mostra o andamento e termina com o resumo e um relatório para abrir no navegador.
+- **Organiza sozinho quando você está longe** (desligado no começo), sempre com 60 segundos para cancelar.
+- **Liberar Espaço:** esvazie uma pasta ou escolha arquivos e decida para onde vão: nuvem (recomendado), Lixeira ou apagar de vez.
+- **Nuvem (Google Drive):** pacote compactado na pasta CubeBin do Drive; só apaga do computador depois de conferir que chegou inteiro. Sem internet, adia e mantém tudo.
+- **Agente de sugestões** (opcional): acha cópias repetidas, temporários esquecidos e arquivos grandes parados — só sugere.
+- **Telas novas:** Início, regras com arrastar e soltar, Configurações em seis seções e a tela de Cubos.
+- **Proteções:** nunca mexe em pastas de projeto (Construct, Unity, código), atalhos, programas, arquivos abertos ou recém-alterados; nada é sobrescrito; pastas padrão nunca são apagadas.
+- Configurações novas em `configuracoes.json` (a configuração da 2.x não é lida).
 
 ## [2.1.0] - 2026-11-14
 - **Versão para Linux** (x64), também pelo NokyLabs Launcher. Organiza no horário certo quando você está longe do computador (GNOME, KDE e sessões X11), abre junto com o sistema, guarda o login do Google Drive no chaveiro do sistema e avisa antes de organizar, com uma janelinha e o botão **Cancelar**.

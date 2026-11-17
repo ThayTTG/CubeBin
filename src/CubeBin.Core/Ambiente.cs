@@ -36,6 +36,7 @@ public class Ambiente
     public string PastaLog => Path.Combine(PastaDados, "Log");
     public string PastaCredenciais => Path.Combine(PastaDados, "Google");
     public string PastaEnviosPendentes => Path.Combine(PastaDados, "Envios pendentes");
+    public string CaminhoSugestoes => Path.Combine(PastaDados, "sugestoes.json");
 
     /// <summary>Log simples de cada execução (PRD 7), um arquivo por mês.</summary>
     public void Log(string mensagem)

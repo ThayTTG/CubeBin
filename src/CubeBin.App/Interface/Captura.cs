@@ -38,6 +38,12 @@ public static class Captura
                                 .FirstOrDefault(b => b.Name == partes[1] && b.IsEffectivelyVisible);
                             botao?.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
                         }
+                        else if (partes[0] == "botao")
+                        {
+                            var botao = janela.GetVisualDescendants().OfType<Avalonia.Controls.Button>()
+                                .FirstOrDefault(b => Equals(b.Content, partes[1]) && b.IsEffectivelyVisible);
+                            botao?.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+                        }
                         else if (partes[0] == "bloco")
                         {
                             // Simula o clique num bloco pelo texto dentro dele.
