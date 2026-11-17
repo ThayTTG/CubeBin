@@ -173,3 +173,43 @@ o CubeBin guarda uma cópia (`configuracoes.json.quebrado-<data>`), volta ao pad
 Num Linux em que `~/.local/share` ainda não existe, o .NET devolvia um caminho vazio (os dados iriam
 para a pasta atual). A pasta agora é pedida com `SpecialFolderOption.Create`, com uma segunda rede de
 segurança (bug encontrado nos testes com Xvfb).
+
+---
+
+## Versão 1.1 — Liberar Espaço
+
+### 3.1 Lixeira de verdade, nos dois sistemas
+- **Linux:** padrão FreeDesktop (`~/.local/share/Trash/files` + `info/*.trashinfo`), o mesmo do
+  Nautilus/Dolphin. O item aparece na Lixeira do sistema e pode ser restaurado por lá também. Itens de
+  outro disco vão para a Lixeira da pasta pessoal (o .NET copia e apaga); a pasta `.Trash-<uid>` de
+  cada disco, que o padrão também permite, não é usada (mais simples, mesmo resultado).
+- **Windows:** envio pela API do Explorer (`SHFileOperation` com "permitir desfazer"). Para restaurar,
+  o CubeBin lê os arquivos de controle `$I…` da `$Recycle.Bin` (caminho original + data), acha o
+  `$R…` correspondente, move de volta e apaga o `$I`. Não depende de menus do Explorer (que mudam de
+  nome conforme o idioma). **Não foi possível testar no Windows real** daqui (só a leitura dos
+  arquivos `$I`, com arquivos montados no teste). Ver pendências.
+
+### 3.2 O que "Esvaziar uma pasta" tira
+Tudo o que está dentro (arquivos e subpastas), **menos**: arquivos ocultos/do sistema (como
+`desktop.ini`), arquivos abertos em outro programa, pastas que parecem projetos e subpastas que
+contêm outra pasta padrão. A pasta esvaziada nunca é apagada. Proteções de "alterado há poucos
+minutos" e de executáveis **não** valem aqui: a pessoa escolheu esvaziar a pasta e vê a lista antes.
+
+### 3.3 O que "Escolher arquivos" recusa
+Uma pasta padrão (pode ser esvaziada, nunca apagada), qualquer pasta que contenha uma pasta padrão
+ou a pasta pessoal, a raiz do disco, pastas do sistema/programas e a pasta de dados do CubeBin
+(sem ela não há como restaurar). Arquivos dentro de uma pasta também escolhida saem junto com ela.
+
+### 3.4 Pastas personalizadas
+"Remover" uma pasta personalizada (Configurações › Pastas) tira a pasta da lista do CubeBin e devolve
+as extensões dela para "sem pasta", mas **não apaga nada do disco**. Para apagar o conteúdo, a pessoa
+usa o Liberar Espaço, que tem a confirmação e o caminho de volta.
+
+### 3.5 Confirmações
+A própria tela "Para onde vão?" é a confirmação para Lixeira (dá para restaurar). "Apagar de vez"
+pede uma confirmação extra, com o botão vermelho e a lixeira, como manda o guia NokyLabs. Sem Lixeira
+disponível no sistema, o bloco da Lixeira aparece apagado.
+
+### 3.6 Sem conta conectada
+Como no PRD: o bloco da nuvem aparece apagado, com o aviso "Nenhuma conta do Google Drive conectada"
+e o link "Conectar conta" no canto inferior esquerdo; o botão da direita vira "Enviar para a Lixeira".

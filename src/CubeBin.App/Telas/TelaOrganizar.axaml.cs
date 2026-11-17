@@ -333,44 +333,9 @@ public partial class TelaOrganizar : UserControl, ITela
             textoConfirmar: "Desfazer", textoCancelar: "Manter organizado");
         if (resposta != MessageBoxResult.Yes) return;
 
-        await DesfazerCuboAsync(_servicos, cubo);
+        await _servicos.RestaurarAsync(cubo);
         BtnDesfazer.IsVisible = false;
         TxtConclusaoDetalhe.Text = "Os arquivos voltaram para onde estavam.";
-    }
-
-    /// <summary>Desfaz um Cubo e mostra o resultado (também usado pela tela de Cubos).</summary>
-    public static async Task<ResultadoRestauracao?> DesfazerCuboAsync(ServicosApp servicos, Cubo cubo)
-    {
-        if (!servicos.TentarOcupar())
-        {
-            Dialogo.Show("O CubeBin está mexendo em arquivos agora. Tente de novo em instantes.", "Restaurar");
-            return null;
-        }
-        try
-        {
-            var r = await Task.Run(() => servicos.NovoRestaurador().Restaurar(cubo));
-            var texto = $"{Ui.Plural(r.Restaurados, "arquivo voltou", "arquivos voltaram")} para o lugar de origem.";
-            if (r.Renomeados.Count > 0)
-                texto += $"\n\n{r.Renomeados.Count} já tinha(m) um arquivo novo com o mesmo nome no lugar, então voltaram com outro nome:\n" +
-                         string.Join("\n", r.Renomeados.Take(8).Select(Path.GetFileName));
-            if (r.NaoEncontrados.Count > 0)
-                texto += $"\n\n{r.NaoEncontrados.Count} não estavam mais onde o CubeBin deixou (foram movidos ou apagados depois).";
-            if (r.Falhas.Count > 0)
-                texto += "\n\nNão foi possível devolver:\n" + string.Join("\n", r.Falhas.Take(8).Select(f => $"• {f.Nome}: {f.Motivo}"));
-            Dialogo.Show(texto, "Restaurar", MessageBoxButton.OK,
-                r.Falhas.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
-            return r;
-        }
-        catch (Exception ex)
-        {
-            App.RegistrarCrash(ex);
-            Dialogo.Show($"Não foi possível restaurar: {ex.Message}", "Restaurar", MessageBoxButton.OK, MessageBoxImage.Error);
-            return null;
-        }
-        finally
-        {
-            servicos.Liberar();
-        }
     }
 
     private void BtnRelatorio_Click(object? sender, RoutedEventArgs e)

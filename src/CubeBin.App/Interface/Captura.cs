@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Media.Imaging;
 using Avalonia.LogicalTree;
+using Avalonia.VisualTree;
 using Avalonia.Threading;
 
 namespace CubeBin.App.Interface;
@@ -36,6 +37,16 @@ public static class Captura
                             var botao = janela.GetLogicalDescendants().OfType<Avalonia.Controls.Button>()
                                 .FirstOrDefault(b => b.Name == partes[1] && b.IsEffectivelyVisible);
                             botao?.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+                        }
+                        else if (partes[0] == "bloco")
+                        {
+                            // Simula o clique num bloco pelo texto dentro dele.
+                            var bloco = janela.GetVisualDescendants().OfType<Avalonia.Controls.Border>()
+                                .FirstOrDefault(b => b.Classes.Contains("clicavel") && b.IsEffectivelyVisible &&
+                                    b.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().Any(t => t.Text == partes[1]));
+                            bloco?.RaiseEvent(new Avalonia.Input.PointerReleasedEventArgs(bloco, new Avalonia.Input.Pointer(0, Avalonia.Input.PointerType.Mouse, true),
+                                janela, default, 0, new Avalonia.Input.PointerPointProperties(), Avalonia.Input.KeyModifiers.None, Avalonia.Input.MouseButton.Left)
+                                { RoutedEvent = Avalonia.Input.InputElement.PointerReleasedEvent });
                         }
                         else janela.Navegar(partes[0], partes.Length > 1 ? partes[1] : null);
                     });

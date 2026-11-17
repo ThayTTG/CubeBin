@@ -62,6 +62,7 @@ public partial class MainWindow : Window
     {
         "inicio" => new TelaInicio(_servicos, this),
         "organizar" => new TelaOrganizar(_servicos, this),
+        "liberar" => new TelaLiberar(_servicos, this),
         "sobre" => new TelaSobre(),
         _ => new TelaEmBreve(pagina),
     };
