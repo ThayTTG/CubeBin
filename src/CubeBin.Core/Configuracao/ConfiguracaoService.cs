@@ -261,8 +261,10 @@ public class ConfiguracaoService
         if (MesmoCaminho(completo, home))
             return "A pasta pessoal inteira é grande demais para organizar. Escolha uma pasta dentro dela.";
 
+        // A pasta temporária fica dentro de AppData no Windows, mas é do usuário (e é onde os testes rodam).
+        var temporaria = Path.GetTempPath();
         foreach (var proibida in PastasDoSistemaOperacional())
-            if (MesmoCaminho(completo, proibida) || EstaDentro(completo, proibida))
+            if ((MesmoCaminho(completo, proibida) || EstaDentro(completo, proibida)) && !EstaDentro(completo, temporaria))
                 return "Essa é uma pasta do sistema ou de programas. O CubeBin só mexe nas pastas do usuário.";
 
         foreach (var pasta in config.Pastas)

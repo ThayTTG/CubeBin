@@ -343,13 +343,14 @@ public class OrganizadorTests
     public void MoveDiretoGravaRegistroRelatorioECubo()
     {
         using var c = new Cenario();
-        c.Pasta.Arquivo(c.Em(PastaPadrao.Downloads), "foto, com vírgula \"e aspas\".jpg");
+        var nome = OperatingSystem.IsWindows() ? "foto, com vírgula 'e apóstrofo'.jpg" : "foto, com vírgula \"e aspas\".jpg";
+        c.Pasta.Arquivo(c.Em(PastaPadrao.Downloads), nome);
         c.Pasta.Arquivo(c.Em(PastaPadrao.AreaDeTrabalho), "música.mp3");
 
         var r = c.Organizar();
 
         Assert.Equal(2, r.Movidos.Count);
-        Assert.True(File.Exists(Path.Combine(c.Em(PastaPadrao.Imagens), "foto, com vírgula \"e aspas\".jpg")));
+        Assert.True(File.Exists(Path.Combine(c.Em(PastaPadrao.Imagens), nome)));
         Assert.True(File.Exists(Path.Combine(c.Em(PastaPadrao.Musicas), "música.mp3")));
         Assert.Empty(Directory.GetFiles(c.Em(PastaPadrao.Downloads)));
 
