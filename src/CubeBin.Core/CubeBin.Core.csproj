@@ -1,13 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    A lógica do CubeBin a partir da versão 3, sem nada de tela: o agente de sugestões (duplicados,
-    temporários antigos, arquivos grandes parados), o apagar com registro, e o backup no Google
-    Drive (os Cubos). A organização de arquivos virou um app à parte (src/Organizador.*).
+    Toda a lógica do CubeBin, sem nada de tela, para Windows e Linux (net8.0 puro):
+    - Plataforma: pastas do sistema (Known Folders / XDG), ausência do usuário, notificações do
+      Linux, abrir junto com o sistema, Lixeira.
+    - Configuracao: o arquivo JSON legível e editável à mão.
+    - Organizar: regras por tipo, proteções, prévia, mover direto e Desfazer.
+    - Registros e Relatorios: o registro JSON gravado arquivo por arquivo e o relatório HTML.
+    - LiberarEspaco, Cubos, Nuvem (Google Drive) e Agente (sugestões de limpeza).
+    O que é só do Windows fica atrás de OperatingSystem.IsWindows().
   -->
   <PropertyGroup>
-    <!-- net8.0 puro: o mesmo Core serve ao Windows e ao Linux. O que é só do Windows (registro,
-         DPAPI, Known Folders, GetLastInputInfo) fica atrás de OperatingSystem.IsWindows(). -->
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -15,20 +18,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Integração com Google Drive (upload/download de arquivos, autenticação OAuth). -->
+    <!-- Google Drive (envio dos Cubos e login OAuth com o escopo restrito drive.file). -->
     <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
     <PackageReference Include="Google.Apis.Drive.v3" Version="1.68.0.3466" />
-    <!-- DPAPI: criptografa o token OAuth em disco, ligado à conta do Windows do usuário —
-         "sem token bruto" (Camada 3). Sabidamente não incluído por padrão mesmo em TFMs -windows. -->
+    <!-- DPAPI: guarda o token do Google criptografado pela conta do Windows. -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="Comum" />
+    <!-- O modelo do relatório vai dentro da DLL: funciona offline e não some do disco. -->
+    <EmbeddedResource Include="Relatorios\ModeloRelatorio.html" LogicalName="CubeBin.ModeloRelatorio.html" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Comum\Comum.csproj" />
+    <InternalsVisibleTo Include="CubeBin.Tests" />
   </ItemGroup>
 
 </Project>

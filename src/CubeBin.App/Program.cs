@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 using Avalonia;
-using Comum.Interop;
+using CubeBin.Core.Plataforma;
 using NokyLabs.UI;
 
 namespace CubeBin.App;
@@ -38,7 +38,7 @@ internal static class Program
             .LogToTrace();
 
     /// <summary>
-    /// Aviso de último caso, com a caixa de mensagem do próprio Windows (não depende do visual
+    /// Aviso de último caso, com a caixa de mensagem do próprio sistema (não depende do visual
     /// do app, então aparece mesmo se o erro tiver vindo dele).
     /// </summary>
     public static void AvisoDoSistema(string mensagem, string titulo)

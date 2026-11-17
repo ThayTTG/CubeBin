@@ -44,6 +44,6 @@ jobs:
       - name: Compilar
         run: dotnet build CubeBin.sln -c Release
 
-      # Os dois apps (CubeBin e o organizador) e os testes dos dois.
+      # O CubeBin (Core + App) e os testes. Os testes só usam pastas temporárias e a "nuvem local".
       - name: Testes
         run: dotnet test CubeBin.sln -c Release

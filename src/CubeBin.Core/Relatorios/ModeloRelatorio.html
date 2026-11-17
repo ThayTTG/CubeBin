@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITULO}}</title>
+<!-- Relatório do CubeBin. Abre com dois cliques em qualquer navegador, sem internet. -->
+<style>
+  :root {
+    --fundo: #0F0B1A; --superficie: #1B1530; --borda: #2C2347; --texto: #F2EEFF;
+    --secundario: #A99FC7; --apagado: #6E6491; --destaque: #C4362E; --destaque-claro: #F4A7A1;
+    --sucesso: #34D399; --perigo: #F87171; --perigo-suave: rgba(248, 113, 113, .14);
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --fundo: #F7F5FC; --superficie: #FFFFFF; --borda: #E3DDF2; --texto: #1B1530;
+            --secundario: #5B5277; --apagado: #8A82A6; --destaque-claro: #A32D26; --perigo: #C0392B;
+            --perigo-suave: rgba(192, 57, 43, .10); }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fundo); color: var(--texto);
+         font: 14px/1.5 "Segoe UI", Inter, system-ui, -apple-system, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 32px 20px 48px; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+  .logo { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center;
+          background: linear-gradient(135deg, #A32D26, #F4A7A1); color: #fff; font-weight: 700; }
+  h1 { font-size: 24px; margin: 0; }
+  .sub { color: var(--secundario); margin: 0 0 22px; }
+  .resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .cartao { background: var(--superficie); border: 1px solid var(--borda); border-radius: 16px; padding: 16px 18px; }
+  .cartao .valor { font-size: 26px; font-weight: 700; }
+  .cartao .rotulo { color: var(--secundario); font-size: 13px; }
+  .cartao.erro .valor { color: var(--perigo); }
+  .cartao.ok .valor { color: var(--sucesso); }
+  .avisos { background: var(--superficie); border: 1px solid var(--borda); border-radius: 12px;
+            padding: 12px 16px; margin-bottom: 22px; color: var(--secundario); }
+  .avisos { list-style: none; }
+  .avisos li { margin: 4px 0; }
+  .avisos li::before { content: "• "; color: var(--destaque-claro); }
+  .busca { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--borda);
+           background: var(--superficie); color: var(--texto); font: inherit; margin-bottom: 12px; }
+  .busca:focus { outline: none; border-color: var(--destaque); }
+  .tabela { background: var(--superficie); border: 1px solid var(--borda); border-radius: 16px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 12px; font-weight: 600; color: var(--apagado); text-transform: uppercase;
+       letter-spacing: .04em; padding: 12px 14px; border-bottom: 1px solid var(--borda); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--borda); vertical-align: top; word-break: break-word; }
+  tr:last-child td { border-bottom: 0; }
+  td.tam { white-space: nowrap; text-align: right; color: var(--secundario); }
+  th.tam { text-align: right; }
+  .caminho { color: var(--secundario); font-size: 12.5px; }
+  tr.falha td { background: var(--perigo-suave); }
+  tr.falha td:first-child { border-left: 3px solid var(--perigo); }
+  .motivo { color: var(--perigo); font-size: 12.5px; font-weight: 600; }
+  .vazio { padding: 28px; text-align: center; color: var(--secundario); }
+  footer { margin-top: 26px; color: var(--apagado); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="logo">CB</div>
+    <h1>{{TITULO}}</h1>
+  </header>
+  <p class="sub">{{OPERACAO}} · {{DATA}}</p>
+
+  <section class="resumo">{{RESUMO}}</section>
+  {{AVISOS}}
+
+  <input class="busca" id="busca" type="search" placeholder="Buscar pelo nome do arquivo…" autocomplete="off">
+  <div class="tabela">
+    <table>
+      <colgroup><col style="width:28%"><col><col><col style="width:110px"></colgroup>
+      <thead><tr><th>Arquivo</th><th>Pasta de origem</th><th>{{COLUNA_DESTINO}}</th><th class="tam">Tamanho</th></tr></thead>
+      <tbody id="linhas">{{LINHAS}}</tbody>
+    </table>
+    <div class="vazio" id="nada" hidden>Nenhum arquivo com esse nome.</div>
+  </div>
+  <footer>Gerado pelo CubeBin · NokyLabs</footer>
+</main>
+<script>
+  // Busca pelo nome, sem internet: só esconde as linhas que não combinam.
+  (function () {
+    var busca = document.getElementById('busca');
+    var linhas = Array.prototype.slice.call(document.querySelectorAll('#linhas tr'));
+    var nada = document.getElementById('nada');
+    function semAcento(t) { return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+    busca.addEventListener('input', function () {
+      var termo = semAcento(busca.value.trim());
+      var visiveis = 0;
+      linhas.forEach(function (tr) {
+        var mostra = !termo || semAcento(tr.getAttribute('data-nome') || '').indexOf(termo) >= 0;
+        tr.hidden = !mostra;
+        if (mostra) visiveis++;
+      });
+      nada.hidden = visiveis > 0 || linhas.length === 0;
+    });
+  })();
+</script>
+</body>
+</html>

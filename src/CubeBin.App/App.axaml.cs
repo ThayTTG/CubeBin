@@ -1,74 +1,68 @@
-using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
-using Comum;
-using Comum.UI;
-using CubeBin.App.Services;
+using CubeBin.App.Interface;
+using CubeBin.App.Servicos;
 using CubeBin.Core;
-using CubeBin.Core.Models;
-using CubeBin.Core.Services;
+using CubeBin.Core.Plataforma;
+using IOPath = System.IO.Path;
 
 namespace CubeBin.App;
 
 /// <summary>
-/// O app em si: sobe os serviços do Core, o agendador do agente e o ícone da bandeja. A janela
-/// principal só é criada quando alguém pede para abrir (menu da bandeja). Os avisos de erro grave
-/// usam a caixa de mensagem NATIVA do Windows de propósito: se o próprio visual for a causa do
-/// erro, a mensagem ainda precisa conseguir aparecer. O resto do app usa o Dialogo da Comum.UI.
-///
-/// Desde a versão 3, o CubeBin não organiza mais nada sozinho: isso virou um app à parte. Aqui
-/// só o agente de sugestões roda em segundo plano (e só se a pessoa ligar).
+/// O app: sobe os serviços, o ícone da bandeja e o agendador por ausência. Fechar a janela só a
+/// esconde (o CubeBin continua na bandeja para o modo automático); "Sair" no menu da bandeja encerra.
+/// Só existe um CubeBin aberto por vez: abrir de novo só mostra a janela do que já está rodando.
 /// </summary>
 public partial class App : Application
 {
-    private TrayIconManager? _trayIconManager;
-    private AgenteScheduler? _agenteScheduler;
-    private ConfigService? _configService;
-    private INotificationService? _notificationService;
-    private GoogleDriveService? _googleDriveService;
-    private readonly InicializacaoService _inicializacaoService = new("CubeBin");
+    /// <summary>%LOCALAPPDATA%\CubeBin (Windows) ou ~/.local/share/CubeBin (Linux).</summary>
+    public static readonly string PastaDados = Ambiente.Padrao().PastaDados;
+
+    public static readonly string CaminhoLogCrash = IOPath.Combine(PastaDados, "crash.log");
+
+    /// <summary>Os serviços do app (criados ao iniciar).</summary>
+    public static ServicosApp? Servicos { get; private set; }
 
     private IClassicDesktopStyleApplicationLifetime? _desktop;
+    private Bandeja? _bandeja;
+    private AgendadorAutomatico? _agendador;
+    private Mutex? _instanciaUnica;
+    private FileSystemWatcher? _sinalAbrir;
+    private readonly Inicializacao _inicializacao = new(InfoApp.NomeNaInicializacao);
 
-    /// <summary>%LOCALAPPDATA%\CubeBin — a mesma pasta de sempre.</summary>
-    public static readonly string PastaDados = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CubeBin");
-
-    public static readonly string CaminhoLogCrash = Path.Combine(PastaDados, "crash.log");
-
-    /// <summary>A janela principal, se já foi aberta alguma vez (fechar só esconde).</summary>
-    public MainWindow? JanelaPrincipal => _desktop?.MainWindow as MainWindow;
+    private static string CaminhoSinal => IOPath.Combine(PastaDados, "abrir.sinal");
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
     {
         base.OnFrameworkInitializationCompleted();
-
-        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
-            return;
-
+        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop) return;
         _desktop = desktop;
-        // O app continua residente na bandeja mesmo com a janela fechada (seção 7 da spec).
+
+        if (!PegarInstanciaUnica())
+        {
+            // Já tem um CubeBin rodando: pede para ele mostrar a janela e sai.
+            try { File.WriteAllText(CaminhoSinal, DateTime.Now.ToString("O")); } catch { }
+            desktop.Shutdown();
+            return;
+        }
+
         desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
         desktop.Exit += (_, _) => AoSair();
 
-        var icone = TrayIconManager.CarregarIcone("avares://CubeBin/app.ico");
-        Dialogo.Configurar("CubeBin", icone);
+        var icone = Bandeja.CarregarIcone("avares://CubeBin/app.ico");
+        Dialogo.Configurar(InfoApp.Nome, icone);
 
-        // Captura qualquer exceção não tratada na thread da tela e grava em crash.log antes de
-        // encerrar — sem isso, uma falha na inicialização derruba o processo silenciosamente.
         Dispatcher.UIThread.UnhandledException += (_, args) =>
         {
             RegistrarCrash(args.Exception);
-            Program.AvisoDoSistema(
-                $"O CubeBin encontrou um erro e vai fechar.\n\nDetalhes em:\n{CaminhoLogCrash}",
-                "Erro inesperado");
+            Dialogo.Show($"Algo deu errado, mas nenhum arquivo foi perdido.\n\nDetalhes em:\n{CaminhoLogCrash}",
+                "Erro inesperado", MessageBoxButton.OK, MessageBoxImage.Error);
             args.Handled = true;
-            Encerrar();
         };
 
         try
@@ -78,121 +72,112 @@ public partial class App : Application
         catch (Exception ex)
         {
             RegistrarCrash(ex);
-            Program.AvisoDoSistema(
-                $"Não foi possível iniciar o CubeBin.\n\nDetalhes em:\n{CaminhoLogCrash}",
-                "Erro na inicialização");
-            Encerrar();
+            Program.AvisoDoSistema($"Não foi possível iniciar o CubeBin.\n\nDetalhes em:\n{CaminhoLogCrash}", "Erro na inicialização");
+            desktop.Shutdown();
             return;
         }
 
-        // "CubeBin.exe --abrir" já abre a janela (útil para o launcher e para testar a tela).
-        if (desktop.Args?.Contains("--abrir", StringComparer.OrdinalIgnoreCase) == true)
-            AbrirJanelaPrincipal();
+        // Pelo "abrir junto com o sistema" o CubeBin começa só na bandeja; aberto pela pessoa, mostra a janela.
+        var soBandeja = desktop.Args?.Contains("--bandeja", StringComparer.OrdinalIgnoreCase) == true;
+        if (!soBandeja) AbrirJanela();
+        if (_desktop.MainWindow is MainWindow janela) Captura.TalvezCapturar(janela, () => { _saindo = true; desktop.Shutdown(); });
     }
 
     private void IniciarServicos(WindowIcon? icone)
     {
-        _configService = new ConfigService(Path.Combine(PastaDados, "config.json"));
-        var config = _configService.CarregarOuCriarPadrao();
-
-        // Sincroniza o início automático (registro do Windows / autostart do Linux) com o que está
-        // salvo no config.json — cobre o caso de alguém ter removido a entrada manualmente fora do app.
-        SincronizarInicializacaoComWindows(config);
-
-        _notificationService = CriarServicoDeNotificacao();
-        _googleDriveService = new GoogleDriveService(config.PastaCredenciaisGoogleDrive);
-
-        // Se as credenciais embutidas já estiverem preenchidas e já houve uma conexão bem-sucedida
-        // antes, isso restaura a sessão em segundo plano sem abrir o navegador de novo (o token
-        // salvo se renova sozinho). Se não houver token válido ainda, falha silenciosamente — o
-        // usuário conecta manualmente pela UI quando quiser.
-        if (GoogleDriveCredentials.EstaConfigurado)
-            _ = TentarReconectarGoogleDriveAsync();
-
-        // Agente de sugestões: desativado por padrão (config.AgenteAtivo). Nunca apaga nada
-        // sozinho, só sugere.
-        _agenteScheduler = new AgenteScheduler(
-            _configService, new AgenteSugestaoService(), new SugestaoService(),
-            new IdleDetectionService(), _notificationService);
-        _agenteScheduler.AnaliseFinalizada += () =>
-        {
-            if (JanelaPrincipal is MainWindow janela)
-                Dispatcher.UIThread.Invoke(janela.AtualizarSugestoesAposAnaliseExterna);
-        };
-        _agenteScheduler.Iniciar();
-
-        _trayIconManager = new TrayIconManager(
-            this, "CubeBin", icone,
-            abrir: AbrirJanelaPrincipal,
-            textoAcaoPrincipal: "Procurar o que limpar",
-            acaoPrincipal: ProcurarOQueLimpar,
-            sair: Encerrar);
-    }
-
-    /// <summary>Pelo menu da bandeja: roda o agente agora e abre a janela nas Sugestões.</summary>
-    private void ProcurarOQueLimpar()
-    {
-        AbrirJanelaPrincipal();
-        JanelaPrincipal?.IrParaSugestoes();
-        _agenteScheduler?.AnalisarAgora();
-    }
-
-    /// <summary>Toasts nativos no Windows; no Linux, janela de contagem + notify-send.</summary>
-    private static INotificationService CriarServicoDeNotificacao()
-    {
+        IAvisos avisos;
 #if WINDOWS
-        return new ToastNotificationService();
+        avisos = new AvisosWindows();
 #else
-        return new LinuxNotificationService();
+        avisos = new AvisosLinux();
 #endif
+        Servicos = new ServicosApp(Ambiente.Padrao(), avisos);
+        var config = Servicos.Config.Carregar();
+        SincronizarInicializacao(config.Automacao.IniciarComOSistema);
+        Servicos.Config.Alterada += c => SincronizarInicializacao(c.Automacao.IniciarComOSistema);
+
+        _agendador = new AgendadorAutomatico(Servicos, id => AbrirJanela("cubos", id), () => AbrirJanela("liberar"));
+        _agendador.Iniciar();
+        _ = Servicos.ReconectarNuvemAsync();
+
+        _bandeja = new Bandeja(this, InfoApp.Nome, icone,
+            abrir: () => AbrirJanela(),
+            textoAcaoPrincipal: "Organizar agora",
+            acaoPrincipal: () => AbrirJanela("organizar"),
+            sair: () => _desktop?.Shutdown());
+
+        Directory.CreateDirectory(PastaDados);
+        _sinalAbrir = new FileSystemWatcher(PastaDados, IOPath.GetFileName(CaminhoSinal))
+        {
+            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.CreationTime | NotifyFilters.FileName,
+            EnableRaisingEvents = true,
+        };
+        _sinalAbrir.Created += (_, _) => Dispatcher.UIThread.Post(() => AbrirJanela());
+        _sinalAbrir.Changed += (_, _) => Dispatcher.UIThread.Post(() => AbrirJanela());
     }
 
-    private void SincronizarInicializacaoComWindows(AppConfig config)
+    /// <summary>Mostra a janela (criando se preciso) e, se pedido, uma página.</summary>
+    public void AbrirJanela(string? pagina = null, object? parametro = null)
     {
-        // Windows: registro (HKCU\...\Run). Linux: ~/.config/autostart. Em outros sistemas, nada.
-        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux()) return;
-
-        var caminhoExecutavel = Environment.ProcessPath;
-        if (string.IsNullOrEmpty(caminhoExecutavel)) return;
-
-        if (config.IniciarComWindows)
-            _inicializacaoService.Habilitar(caminhoExecutavel);
-        else
-            _inicializacaoService.Desabilitar();
+        if (_desktop is null || Servicos is null) return;
+        if (_desktop.MainWindow is not MainWindow janela)
+        {
+            janela = new MainWindow(Servicos);
+            janela.Closing += (_, e) =>
+            {
+                // Fechar só esconde: o CubeBin continua cuidando dos arquivos pela bandeja.
+                if (!_saindo)
+                {
+                    e.Cancel = true;
+                    janela.Hide();
+                }
+            };
+            _desktop.MainWindow = janela;
+        }
+        janela.Show();
+        if (janela.WindowState == WindowState.Minimized) janela.WindowState = WindowState.Normal;
+        janela.Activate();
+        if (pagina is not null) janela.Navegar(pagina, parametro);
     }
 
-    private async Task TentarReconectarGoogleDriveAsync()
+    private bool _saindo;
+
+    private bool PegarInstanciaUnica()
     {
         try
         {
-            await _googleDriveService!.ConectarAsync();
+            _instanciaUnica = new Mutex(initiallyOwned: true, "CubeBin-NokyLabs-instancia-unica", out var criado);
+            return criado;
         }
-        catch
+        catch (Exception)
         {
-            // Falha silenciosa: token pode ter expirado/sido revogado, ou ainda não houve conexão
-            // bem-sucedida antes. O usuário pode clicar em "Conectar ao Google Drive" na UI se precisar.
+            return true; // sem como saber: segue (melhor abrir do que não abrir)
         }
     }
 
-    private void AbrirJanelaPrincipal()
+    private void SincronizarInicializacao(bool ligado)
     {
-        if (_desktop is null) return;
-
-        var janela = JanelaPrincipal ?? new MainWindow(
-            _configService!, _notificationService!, _inicializacaoService, _googleDriveService!);
-        _desktop.MainWindow = janela;
-        janela.Show();
-        if (janela.WindowState == WindowState.Minimized)
-            janela.WindowState = WindowState.Normal;
-        janela.Activate();
+        try
+        {
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux()) return;
+            var exe = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(exe) || IOPath.GetFileNameWithoutExtension(exe).Equals("dotnet", StringComparison.OrdinalIgnoreCase)) return;
+            if (ligado) _inicializacao.Habilitar(exe, "--bandeja");
+            else if (_inicializacao.EstaHabilitado()) _inicializacao.Desabilitar();
+        }
+        catch (Exception ex)
+        {
+            RegistrarCrash(ex);
+        }
     }
-
-    private void Encerrar() => _desktop?.Shutdown();
 
     private void AoSair()
     {
-        _agenteScheduler?.Parar();
-        _trayIconManager?.Dispose();
+        _saindo = true;
+        _agendador?.Parar();
+        _bandeja?.Dispose();
+        _sinalAbrir?.Dispose();
+        try { _instanciaUnica?.ReleaseMutex(); } catch { }
     }
 
     public static void RegistrarCrash(Exception ex)

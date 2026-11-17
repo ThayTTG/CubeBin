@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:NokyLabs.UI"
+             x:Class="CubeBin.App.Telas.TelaInicio">
+  <!--
+    Tela inicial (PRD 5.6): status, as duas ações (Organizar Arquivos em destaque e Liberar Espaço),
+    os Cubos recentes (preview por tipo ao passar o mouse) e o último relatório.
+  -->
+  <ScrollViewer>
+    <StackPanel Margin="32,28,32,28" Spacing="18">
+      <StackPanel ui:Anim.Entrance="True" ui:Anim.Order="0">
+        <TextBlock x:Name="TxtSaudacao" Text="Olá!" Classes="titulo" />
+        <TextBlock x:Name="TxtStatus" Classes="descricao" Text="Seus arquivos, sempre no lugar certo." />
+      </StackPanel>
+
+      <!-- Status -->
+      <Border Classes="card" Padding="18,14" ui:Anim.Entrance="True" ui:Anim.Order="1">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Border Classes="iconeBloco" Margin="0,0,14,0">
+            <Viewbox Width="20" Height="20"><Path Classes="icon" Data="{StaticResource IconeRaio}" /></Viewbox>
+          </Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock x:Name="TxtAutomacao" FontWeight="SemiBold" Text="Organização automática" />
+            <TextBlock x:Name="TxtAutomacaoDetalhe" Classes="secondary" FontSize="13" />
+          </StackPanel>
+          <ToggleSwitch x:Name="ChaveAutomacao" Grid.Column="2" OnContent="Ligada" OffContent="Desligada"
+                        IsCheckedChanged="ChaveAutomacao_Changed" />
+        </Grid>
+      </Border>
+
+      <!-- Avisos (extensões esperando pasta, envio adiado...) -->
+      <StackPanel x:Name="PainelAvisos" Spacing="8" />
+
+      <!-- As duas ações -->
+      <Grid ColumnDefinitions="3*,16,2*" ui:Anim.Entrance="True" ui:Anim.Order="2">
+        <Border x:Name="BlocoOrganizar" Classes="bloco destaque clicavel" Padding="22" PointerReleased="BlocoOrganizar_Click">
+          <StackPanel Spacing="12">
+            <Border Classes="iconeBloco" Width="52" Height="52" HorizontalAlignment="Left">
+              <Viewbox Width="26" Height="26"><Path Classes="icon" Data="{StaticResource IconeOrganizar}" /></Viewbox>
+            </Border>
+            <TextBlock Text="Organizar Arquivos" Classes="h2" />
+            <TextBlock Classes="secondary" TextWrapping="Wrap"
+                       Text="Imagens, vídeos, músicas e documentos vão para as pastas certas. Você confere antes e pode desfazer depois." />
+            <Button Classes="primary ic" Content="Organizar agora" Tag="{StaticResource IconeOrganizar}"
+                    HorizontalAlignment="Left" Click="BtnOrganizar_Click" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="2" x:Name="BlocoLiberar" Classes="bloco clicavel" Padding="22" PointerReleased="BlocoLiberar_Click">
+          <StackPanel Spacing="12">
+            <Border Classes="iconeBloco" Width="52" Height="52" HorizontalAlignment="Left">
+              <Viewbox Width="26" Height="26"><Path Classes="icon" Data="{StaticResource IconeDisco}" /></Viewbox>
+            </Border>
+            <TextBlock Text="Liberar Espaço" Classes="h2" />
+            <TextBlock Classes="secondary" TextWrapping="Wrap"
+                       Text="Esvazie uma pasta ou escolha arquivos. Mande para a nuvem, para a Lixeira ou apague de vez." />
+            <Button Classes="secondary ic" Content="Liberar espaço" Tag="{StaticResource IconeDisco}"
+                    HorizontalAlignment="Left" Click="BtnLiberar_Click" />
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <!-- Cubos -->
+      <StackPanel Spacing="10" ui:Anim.Entrance="True" ui:Anim.Order="3">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel>
+            <TextBlock Text="SEUS CUBOS" Classes="caps" />
+            <TextBlock Classes="pequeno" Text="Cada organização ou limpeza vira um Cubo. Passe o mouse para ver o que tem dentro." />
+          </StackPanel>
+          <Button Grid.Column="1" Classes="link" Content="Ver todos" Click="BtnVerTodos_Click" VerticalAlignment="Bottom" />
+        </Grid>
+        <WrapPanel x:Name="ListaCubos" ItemSpacing="12" LineSpacing="12" />
+        <TextBlock x:Name="TxtSemCubos" Classes="secondary" IsVisible="False"
+                   Text="Ainda não há Cubos. Eles aparecem aqui depois da primeira organização." />
+      </StackPanel>
+
+      <!-- Relatório -->
+      <Border x:Name="CartaoRelatorio" Classes="card" Padding="18,14" IsVisible="False">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Border Classes="iconeBloco" Margin="0,0,14,0">
+            <Viewbox Width="20" Height="20"><Path Classes="icon" Data="{StaticResource IconeDocumento}" /></Viewbox>
+          </Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="Último relatório" FontWeight="SemiBold" />
+            <TextBlock x:Name="TxtRelatorio" Classes="secondary" FontSize="13" />
+          </StackPanel>
+          <Button Grid.Column="2" Classes="secondary ic" Content="Abrir" Tag="{StaticResource IconeLinkExterno}"
+                  Click="BtnRelatorio_Click" VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

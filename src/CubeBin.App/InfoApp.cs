@@ -8,6 +8,11 @@ namespace CubeBin.App;
 /// </summary>
 public static class InfoApp
 {
+    public const string Nome = "CubeBin";
+
+    /// <summary>Nome usado no "abrir junto com o sistema" (registro do Windows / autostart do Linux).</summary>
+    public const string NomeNaInicializacao = "CubeBin";
+
     public const string UrlSite = "https://thayttg.github.io/nokylabs/#cubebin";
     public const string UrlCodigo = "https://github.com/ThayTTG/CubeBin";
     public const string UrlProblema = "https://github.com/ThayTTG/CubeBin/issues/new";

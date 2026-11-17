@@ -1,162 +1,184 @@
-# CubeBin (e o organizador da NokyLabs)
+# CubeBin
 
-Este repositório guarda **dois apps** da NokyLabs para Windows e Linux (C#/.NET 8, interface em Avalonia com
-o Kit NokyLabs), que até a versão 2.x eram um app só:
+Organizador de arquivos da NokyLabs para **Windows e Linux** (C#/.NET 8, interface em Avalonia com o
+Kit NokyLabs). Organiza os arquivos por tipo, ajuda a liberar espaço e **sempre deixa um caminho de
+volta**: antes de mexer em qualquer arquivo, o CubeBin anota de onde ele saiu.
 
-- **CubeBin** (3.x) — liberar espaço sem perder nada. **Sugestões** (um agente opcional, desligado
-  por padrão, que procura duplicados, temporários antigos e arquivos grandes parados, só com
-  heurísticas locais, sem internet), **Deletar** (apagar arquivos e pastas com registro em CSV
-  antes), **Cubos** (pacotes de backup no Google Drive: só apaga do computador depois de confirmar
-  o envio), **Ajustes** e **Login**.
-- **Organizador** (nome provisório) — a antiga parte "Organizar" do CubeBin: distribui os arquivos
-  das pastas acompanhadas em pastas por tipo, sozinho, quando você está longe do computador.
-  Tudo o que ele move pode voltar para onde estava (Histórico). Só mexe dentro do computador: não
-  fala com a nuvem nem apaga nada.
+Dois módulos:
 
-Por que separar: eram duas promessas diferentes num app só (manter tudo arrumado / liberar espaço),
-o que deixava o CubeBin confuso para quem não é da área. O plano completo da repaginada está no
-Projeto NokyLabs ("plano-cubebin-repaginado").
+- **Organizar Arquivos** — imagens para Imagens, vídeos para Vídeos, áudios para Músicas e
+  documentos para Documentos, sem cadastrar nada. Prévia antes, Desfazer depois, relatório em HTML e
+  modo automático quando você está longe do computador (com 60 s para cancelar).
+- **Liberar Espaço** — esvaziar uma pasta ou escolher arquivos e mandar para a nuvem (Google Drive,
+  recomendado), para a Lixeira ou apagar de vez. Com um agente opcional que só sugere o que limpar.
 
-A especificação original (fluxo, regras de negócio, changelog antigo) está em `docs/spec.md` e
-continua valendo para a organização, que agora mora no Organizador.
+A fonte da verdade é o PRD (`docs/PRD-CubeBin.md`). As decisões tomadas onde o PRD não definia o
+detalhe estão em `docs/DECISOES.md`, e as notas de cada etapa do roadmap em `docs/notas/`.
 
 ## Estrutura
 
 ```
 CubeBin.sln
 src/
-  Comum/              # O que os dois apps dividem, sem tela: mover arquivos com segurança, registro
-                      # em CSV, detecção de ausência, abrir com o Windows, conta dos horários e a
-                      # leitura do config da 2.x (MigracaoDaVersao2)
-  Comum.UI/           # O que os dois dividem na tela: o diálogo no visual da NokyLabs, a barra de
-                      # título escura, o ícone da bandeja, ícones (Recursos.axaml) e estilos (Estilos.axaml)
-
-  Organizador.Core/   # Regras por extensão, pastas acompanhadas, o passo a passo de uma organização,
-                      # pendências e o "devolver ao lugar" (Recall)
-  Organizador.App/    # Telas: Organizar, Pastas, Histórico, Configurações, Sobre. Organizador.exe
-
-  CubeBin.Core/       # Agente de sugestões, apagar com registro, Google Drive e os Cubos
-  CubeBin.App/        # Telas: Sugestões, Deletar, Cubos, Ajustes, Login, Sobre. CubeBin.exe
-lib/
-  NokyLabs.UI/        # Submódulo Git: o Kit NokyLabs (cores, botões, animações, créditos)
-tests/
-  Organizador.Tests/  # Agendamento, configuração, classificação e a migração da 2.x
-  CubeBin.Tests/      # Agendamento do agente, configuração e a migração da 2.x
+  CubeBin.Core/        Toda a lógica, sem tela (net8.0, Windows e Linux)
+    Plataforma/        Pastas do sistema (Known Folders / XDG), ausência, Lixeira, notificações Linux, autostart
+    Configuracao/      configuracoes.json (regras padrão, pastas, automação, proteções)
+    Organizar/         Prévia (Planejador), proteções, execução (Organizador), conflito de nomes, modo automático
+    Registros/         Registro JSON Lines gravado arquivo por arquivo
+    Relatorios/        Relatório HTML (modelo embutido)
+    LiberarEspaco/     Esvaziar pasta / escolher arquivos, Lixeira e Apagar de vez
+    Cubos/             O índice dos Cubos e a restauração
+    Nuvem/             Google Drive, envio com conferência de integridade, índice na nuvem
+    Agente/            Sugestões de limpeza (regras locais)
+  CubeBin.App/         Telas (Avalonia + Kit NokyLabs), bandeja, avisos e agendador
+    Telas/             Início, Organizar, Liberar Espaço, Cubos, Configurações (6 seções), Sobre
+    Interface/         Estilos, ícones, diálogos e peças de tela
+    Servicos/          Serviços do app, toasts (Windows), avisos (Linux), agendador por ausência
+tests/CubeBin.Tests/   83 testes — todos em pastas temporárias, nunca nas pastas reais
+lib/NokyLabs.UI/       Submódulo Git: o Kit NokyLabs (o mesmo do launcher)
+docs/                  PRD, decisões, notas de atualização e documentos antigos (docs/historico)
 ```
 
-Quando o organizador ganhar nome, a ideia é ele ir para um repositório próprio, levando `Comum` e
-`Comum.UI` como submódulo (do mesmo jeito que o Kit NokyLabs). Para trocar o nome, os lugares são
-`src/Organizador.App/InfoApp.cs` (nome, pasta de dados, nome na inicialização do Windows, links) e o
-`.csproj` dele (`AssemblyName`, `Product`). A cor provisória é o rosa `#F472B6` (`App.axaml`) e o
-ícone provisório é `src/Organizador.App/app.ico`.
+## Como abrir e compilar
 
-### Onde cada app guarda os arquivos
-
-| | Pasta | O que tem |
-|---|---|---|
-| CubeBin | `%LOCALAPPDATA%\CubeBin` | `config.json`, sugestões, cubos, login do Google, `registros\` (CSV do que foi apagado) |
-| Organizador | `%LOCALAPPDATA%\NokyLabs\Organizador` | `config.json`, pendências, histórico, `backups\` (CSV de cada organização) |
-
-**Quem vem da 2.x:** o primeiro dos dois apps que abrir guarda uma cópia intacta do config antigo em
-`%LOCALAPPDATA%\CubeBin\config-2.x.json`, e cada app lê a parte dele dessa cópia — a ordem não
-importa. O organizador continua usando as pendências, o histórico e a pasta temporária de onde já
-estavam (dentro de `%LOCALAPPDATA%\CubeBin`), para nada se perder. Regras que mandavam arquivos para
-o Google Drive viram regras para uma pasta local de mesmo nome, e o organizador avisa isso uma vez.
-
-### O Kit NokyLabs (submódulo)
-
-A aparência vem da biblioteca [NokyLabs.UI](https://github.com/ThayTTG/NokyLabs.UI), presa em
-`lib/NokyLabs.UI` como submódulo. Ao clonar, traga junto:
-
-```
+```bash
 git clone --recurse-submodules https://github.com/ThayTTG/CubeBin.git
 ```
 
-(Se já clonou sem ele: `git submodule update --init`.) Para trazer uma versão nova do Kit:
-`git submodule update --remote lib/NokyLabs.UI`.
+(Se já clonou sem o Kit: `git submodule update --init`.)
 
-## Como abrir
-
-1. Instale o .NET 8 SDK (Visual Studio 2022, Rider ou só o `dotnet` CLI).
+1. Instale o .NET 8 SDK.
 2. Copie `src/CubeBin.Core/GoogleDriveCredentials.Secrets.cs.example` para
-   `GoogleDriveCredentials.Secrets.cs` (mesma pasta). Sem as credenciais reais, tudo compila e só o
-   backup na nuvem fica desligado (veja abaixo).
-3. Abra `CubeBin.sln` no Visual Studio, **ou**:
-   ```
-   dotnet build CubeBin.sln
-   dotnet test CubeBin.sln
-   dotnet run --project src/CubeBin.App -- --abrir
-   dotnet run --project src/Organizador.App -- --abrir
-   ```
-   Os dois abrem só na bandeja (perto do relógio); o `--abrir` já mostra a janela.
+   `GoogleDriveCredentials.Secrets.cs` (mesma pasta). Sem credenciais reais, tudo compila e só a
+   nuvem fica desligada.
+3. Compile, teste e rode:
 
-## Distribuição como .exe único (sem instalar dependências)
-
-Cada app tem um perfil de publicação (`Properties/PublishProfiles/SingleFile-win-x64.pubxml`) que gera
-um único `.exe` autocontido — quem usa não precisa instalar o .NET:
-
+```bash
+dotnet build CubeBin.sln
 ```
+
+```bash
+dotnet test CubeBin.sln
+```
+
+```bash
+dotnet run --project src/CubeBin.App
+```
+
+Aberto assim, o CubeBin mostra a janela. Fechar a janela só esconde (ele continua perto do relógio
+para o modo automático); "Sair" fica no menu do ícone. Só um CubeBin roda por vez.
+
+### Publicar
+
+```bash
 dotnet publish src/CubeBin.App/CubeBin.App.csproj -c Release -p:PublishProfile=SingleFile-win-x64
-dotnet publish src/Organizador.App/Organizador.App.csproj -c Release -p:PublishProfile=SingleFile-win-x64
 ```
 
-O lançamento automático (`.github/workflows/release.yml`) ainda publica só o CubeBin. **Não lance o
-CubeBin 3.0 antes do organizador estar publicado também**, senão quem atualizar fica sem a organização.
-
-Observação sobre "Iniciar com o Windows": quando o app roda via `dotnet run`, `Environment.ProcessPath`
-aponta para `dotnet.exe`. Para testar essa opção, use o `.exe` compilado ou publicado. Cada app se
-registra com o seu nome (`CubeBin` e `NokyLabs Organizador`), então um não desliga o outro.
-
-## Versão Linux
-
-O mesmo código gera a versão Linux (x64) dos dois apps. O alvo é escolhido pelo `-r`: com
-`-r linux-x64` os apps compilam em `net8.0` puro, sem os toasts do Windows. Dá para publicar a
-partir do próprio Windows:
-
-```
+```bash
 dotnet publish src/CubeBin.App/CubeBin.App.csproj -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish-linux
-dotnet publish src/Organizador.App/Organizador.App.csproj -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish-linux-organizador
 ```
 
-Cada pasta fica com o executável (`CubeBin` ou `Organizador`) e o `icon.png`, que o NokyLabs
-Launcher usa no atalho. No lançamento, o GitHub Actions gera o `CubeBin-linux-x64.zip` junto do
-pacote Windows (o organizador ainda não tem lançamento próprio).
+O lançamento automático (`.github/workflows/release.yml`) gera os dois pacotes quando algo é enviado
+ao branch `release`. A versão vem do `<Version>` em `src/CubeBin.App/CubeBin.App.csproj` (3.0.0; ver
+`docs/DECISOES.md`, item 1.5).
 
-O que muda no Linux:
+## Onde o CubeBin guarda as coisas
 
-| Recurso | Windows | Linux |
+`%LOCALAPPDATA%\CubeBin` (Windows) ou `~/.local/share/CubeBin` (Linux):
+
+| Arquivo/pasta | O que é |
+|---|---|
+| `configuracoes.json` | Todas as configurações, legíveis e editáveis à mão (Configurações › "Abrir o arquivo de configurações") |
+| `Registros/*.jsonl` | Um registro por execução: de onde cada arquivo saiu e para onde foi (usado pelo Desfazer/Restaurar) |
+| `Relatórios/Relatório AAAA-MM-DD.html` | O relatório de cada execução, para abrir no navegador |
+| `cubos.json` | O índice dos Cubos (tela inicial e tela de Cubos) |
+| `sugestoes.json` | As últimas sugestões do agente |
+| `Log/` | Um log simples de cada execução |
+
+## Como testar cada módulo
+
+> Dica para testar sem tocar nas suas pastas de verdade (Linux): rode com uma "home" de teste.
+> ```bash
+> HOME=/tmp/casa-teste XDG_CONFIG_HOME=/tmp/casa-teste/.config XDG_DATA_HOME=/tmp/casa-teste/.local/share dotnet run --project src/CubeBin.App
+> ```
+> e crie algumas pastas e arquivos de exemplo (Downloads, Documentos…) dentro de `/tmp/casa-teste`.
+
+**Organizar Arquivos**
+1. Coloque arquivos variados em Downloads (uma foto, um PDF, um MP3, um `.zip`, um `.exe`, um atalho).
+2. Início › **Organizar agora**. A **Prévia** mostra o que vai para cada pasta e o que fica (o `.zip` fica
+   "sem pasta", o `.exe` e o atalho ficam protegidos, arquivos mexidos há menos de 5 min ficam para depois).
+3. **Continuar** › **Confirmação** › **Organizar agora** › **Conclusão**. Abra o relatório e teste a busca.
+4. **Desfazer**: tudo volta. Ponha um arquivo novo com o mesmo nome na origem antes de desfazer: o
+   devolvido ganha o prefixo (ex.: `Img-foto.png`), nada é sobrescrito.
+5. Proteções: crie em Downloads uma pasta com um `package.json` (ou `.sln`, `.c3p`, `.git/`, `Assets/` +
+   `ProjectSettings/`) e ligue "Incluir as subpastas" em Configurações › Pastas: ela aparece como projeto e
+   não é tocada.
+
+**Modo automático**
+1. Configurações › Automação: ligue e ponha 1 minuto de ausência.
+2. Não mexa no computador por 1 min: aparece o aviso (toast no Windows, janelinha no Linux) com o tempo
+   para cancelar. Teste **Cancelar** e, numa outra vez, deixe seguir. No fim vem o aviso com o resultado.
+
+**Liberar Espaço**
+1. Liberar Espaço › escolha uma pasta (ex.: Downloads) › **Esvaziar** — ou arraste arquivos para
+   "Escolher arquivos".
+2. Em **Para onde vão?**, sem conta conectada a nuvem aparece apagada com "Conectar conta"; escolha
+   **Lixeira** › conclusão › **Restaurar**.
+3. Teste **Apagar de vez** com um arquivo descartável (há uma confirmação extra).
+4. Tente escolher a própria pasta Documentos: ela é recusada (pastas padrão nunca são apagadas).
+
+**Regras, Configurações e Cubos**
+- Configurações › Regras: arraste o bloquinho `.zip` até uma pasta, ou até **Nova pasta**, ou clique nele
+  e escolha no menu. Organize de novo e veja o `.zip` ir para lá.
+- Cubos: filtros à esquerda; clique num Cubo para ver o resumo por tipo e **Restaurar**.
+
+**Nuvem sem conta do Google (modo de teste)**
+Rode com `CUBEBIN_NUVEM_DE_TESTE=/tmp/drive-teste`: a "nuvem" vira essa pasta, com o mesmo fluxo
+(pacote em `CubeBin/Cubos`, relatórios em `CubeBin/Relatórios`, `CubeBin/indice.json`, conferência,
+restauração). Ótimo para conferir tudo antes de cadastrar o Google.
+
+**Nuvem com o Google Drive** — veja a seção abaixo; depois, Configurações › Nuvem › **Conectar conta**.
+
+**Agente**
+Configurações › Agente › ligue e **Analisar agora** (ou "Ligar e analisar" no Liberar Espaço). As
+sugestões aparecem no Liberar Espaço; marque as que quiser e **Liberar as escolhidas**. Ele nunca tira
+nada sozinho.
+
+**Testes automáticos**: `dotnet test CubeBin.sln` (83 testes, todos em pastas temporárias, com a
+"nuvem local").
+
+## Configurar a integração com o Google Drive (uma vez, por quem desenvolve)
+
+As credenciais ficam num arquivo que **não vai para o Git**
+(`src/CubeBin.Core/GoogleDriveCredentials.Secrets.cs`).
+
+1. No [Google Cloud Console](https://console.cloud.google.com/), crie (ou escolha) um projeto.
+2. **APIs e serviços › Biblioteca**: ative a **Google Drive API**.
+3. **Tela de consentimento OAuth**: "Externo"; pode ficar em modo de teste com os e-mails de quem vai usar.
+4. **Credenciais › Criar credenciais › ID do cliente OAuth**, tipo **App para computador**.
+5. Copie o Client ID e o Client Secret para `GoogleDriveCredentials.Secrets.cs` (a partir do `.example`).
+6. Recompile. No lançamento automático, cadastre os segredos `CUBEBIN_GDRIVE_CLIENT_ID` e
+   `CUBEBIN_GDRIVE_CLIENT_SECRET` em Settings › Secrets and variables › Actions.
+
+O escopo usado é `drive.file`: o CubeBin só enxerga o que ele mesmo criou (a pasta `CubeBin`).
+
+## Diferenças entre Windows e Linux
+
+| | Windows | Linux |
 |---|---|---|
-| Saber se o usuário está ausente | `GetLastInputInfo` | D-Bus do GNOME (Mutter) ou do KDE, ou XScreenSaver no X11. Sem nenhum deles (Sway, Hyprland), organiza no horário agendado, sempre com o aviso de cancelamento antes. |
-| Abrir junto com o sistema | Registro (`HKCU\...\Run`) | `~/.config/autostart/<app>.desktop` (ex.: `cubebin.desktop`, `nokylabs-organizador.desktop`) |
-| Token do Google Drive (CubeBin) | DPAPI | Chaveiro do sistema (`secret-tool`/libsecret); sem chaveiro, arquivo com permissão 600 |
-| Aviso antes de organizar (Organizador) | Toast com "Cancelar" | Janelinha com contagem regressiva e "Cancelar" |
-| Resumo e avisos | Toast | `notify-send` (libnotify) |
-| Pasta Downloads | Known Folders | `~/.config/user-dirs.dirs` (ex.: `~/Transferências`) |
-| Ícone perto do relógio | Bandeja do Windows | StatusNotifierItem. No GNOME precisa da extensão "AppIndicator". |
+| Pastas do usuário | Known Folders (considera o OneDrive) | `~/.config/user-dirs.dirs` (XDG); se faltar, `~/Pictures` etc., criadas quando preciso |
+| Ausência | `GetLastInputInfo` | GNOME/KDE (D-Bus) ou X11; sem isso, vale só o intervalo, sempre com o aviso antes |
+| Aviso de início | Toast com "Cancelar" | Janelinha com contagem e "Cancelar" |
+| Lixeira | Lixeira do Windows (restauração pelo CubeBin) | Lixeira FreeDesktop (`~/.local/share/Trash`) |
+| Arquivo em uso | Abertura exclusiva | `/proc/*/fd` do usuário |
+| Token do Google | DPAPI | Chaveiro do sistema (libsecret); sem chaveiro, arquivo com permissão 600 |
+| Abrir com o sistema | Registro (`HKCU\...\Run`) | `~/.config/autostart/cubebin.desktop` |
 
-No Linux, o organizador também ignora arquivos ocultos (nome começando com ponto) e downloads em
-andamento (`.part`, `.crdownload`), e a regra padrão "Instaladores" inclui `.deb`, `.rpm`,
-`.appimage`, `.flatpakref`, `.run` e `.sh`.
+## Modo de captura (desenvolvimento)
 
-## Configurar a integração com o Google Drive (necessário antes de usar)
+Com `CUBEBIN_CAPTURA="inicio=/tmp/inicio.png;organizar=/tmp/previa.png"`, o app abre cada página,
+salva uma imagem e fecha (dá para encadear cliques: `organizar+clique:BtnAvancar=/tmp/conf.png`).
+Serve para conferir as telas sem clicar, inclusive com Xvfb. Sem a variável, não faz nada.
 
-As credenciais ficam num arquivo separado que **não é versionado no Git** (`src/CubeBin.Core/GoogleDriveCredentials.Secrets.cs`, ignorado via `.gitignore`) — é um passo único, feito por quem desenvolve o app. Depois de preenchido e recompilado, qualquer pessoa que rodar o app só precisa clicar em "Conectar ao Google Drive" e fazer login com a própria conta, sem tocar em Client ID/Secret nenhum.
-
-1. Acesse o [Google Cloud Console](https://console.cloud.google.com/), crie um projeto novo (ou use um existente).
-2. No menu, vá em **"APIs e serviços" → "Biblioteca"**, procure por **"Google Drive API"** e clique em **Ativar**.
-3. Vá em **"APIs e serviços" → "Tela de consentimento OAuth"**, escolha **"Externo"**, preencha nome do app e e-mail de contato (não precisa publicar — pode deixar em modo "Teste" e adicionar seu(s) próprio(s) e-mail(s) como usuário de teste; até ~100 contas de teste podem logar sem passar pela revisão do Google).
-4. Vá em **"APIs e serviços" → "Credenciais" → "Criar credenciais" → "ID do cliente OAuth"**, tipo de aplicativo **"Aplicativo para computador"** (Desktop app). Dê um nome e crie.
-5. Copie o **Client ID** e o **Client Secret** gerados.
-6. Copie `src/CubeBin.Core/GoogleDriveCredentials.Secrets.cs.example` para `GoogleDriveCredentials.Secrets.cs` (mesma pasta, sem o `.example`) e substitua os dois placeholders pelos valores reais. Esse arquivo copiado nunca é commitado — já está no `.gitignore`.
-7. Recompile o app. A partir daí, o botão "Conectar ao Google Drive" na aba Login do CubeBin já funciona para qualquer pessoa que rodar esse build — sem precisar repetir os passos acima.
-
-## Próximos passos sugeridos
-
-Seguem o plano da repaginada (Projeto NokyLabs, "plano-cubebin-repaginado"):
-
-1. Escolher o nome do organizador (e, com ele, a cor, o ícone e o repositório próprio).
-2. Organizador: Linha do tempo com "Desfazer tudo", tela de Início com prévia, automático desligado
-   na primeira vez, Pastas e Regras em cartões, Ajustes em frases.
-3. CubeBin: tela de Início ("Você pode liberar X GB"), Revisar (Sugestões + Deletar), Login dentro
-   de Ajustes.
-4. Launcher e site: os dois apps no catálogo, com o aviso da separação para quem tinha o CubeBin 2.x.
+---
+Idealizado e aprovado por Thayna Dias · Desenvolvido com IA (Claude, da Anthropic)

@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="CubeBin.App.Telas.TelaSobre">
+  <!-- Tela Sobre, igual em todos os apps da NokyLabs (guia visual). -->
+  <ScrollViewer>
+    <StackPanel Margin="32,28" Spacing="18" MaxWidth="640" HorizontalAlignment="Left">
+      <TextBlock Text="Sobre" Classes="titulo" />
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="14">
+            <Border Width="56" Height="56" CornerRadius="16">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Offset="0" Color="#A32D26" />
+                  <GradientStop Offset="1" Color="#F4A7A1" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <Viewbox Width="30" Height="30">
+                <Path Classes="icon" Data="{StaticResource IconeCubo}" Stroke="White" StrokeThickness="2.4" />
+              </Viewbox>
+            </Border>
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="CubeBin" Classes="h2" />
+              <TextBlock x:Name="TxtVersao" Classes="secondary" />
+              <TextBlock Text="Parte da NokyLabs" Classes="muted" />
+            </StackPanel>
+          </StackPanel>
+          <TextBlock Classes="secondary" TextWrapping="Wrap"
+                     Text="Organiza seus arquivos por tipo e ajuda a liberar espaço, sempre deixando um caminho de volta: antes de mexer em qualquer coisa, o CubeBin anota de onde cada arquivo saiu." />
+          <WrapPanel>
+            <Button Classes="secondary ic" Content="Site do app" Tag="{StaticResource IconeLinkExterno}" Margin="0,0,8,8" Click="BtnSite_Click" />
+            <Button Classes="secondary ic" Content="Código no GitHub" Tag="{StaticResource IconeCodigo}" Margin="0,0,8,8" Click="BtnCodigo_Click" />
+            <Button Classes="secondary ic" Content="Reportar um problema" Tag="{StaticResource IconeAlerta}" Margin="0,0,8,8" Click="BtnProblema_Click" />
+            <Button Classes="secondary ic" Content="Abrir pasta de dados" Tag="{StaticResource IconePasta}" Margin="0,0,8,8" Click="BtnDados_Click" />
+          </WrapPanel>
+          <TextBlock Classes="pequeno" Text="Idealizado e aprovado por Thayna Dias · Desenvolvido com IA (Claude, da Anthropic)" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

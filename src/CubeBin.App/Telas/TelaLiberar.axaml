@@ -1,0 +1,189 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="CubeBin.App.Telas.TelaLiberar">
+  <!--
+    Liberar Espaço (PRD 5.2 e 5.3): duas entradas (Esvaziar uma pasta / Escolher arquivos) que levam à
+    mesma tela "Para onde vão?" — a nuvem recomendada em destaque à direita; Lixeira e Apagar de vez
+    como extras à esquerda. Blocos em colunas, num espaço mais quadrado que horizontal.
+  -->
+  <DockPanel Margin="32,28,32,24">
+    <StackPanel DockPanel.Dock="Top" Spacing="14" Margin="0,0,0,18">
+      <StackPanel>
+        <TextBlock Text="Liberar Espaço" Classes="titulo" />
+        <TextBlock x:Name="TxtDescricao" Classes="descricao"
+                   Text="Esvazie uma pasta ou escolha arquivos. Antes de qualquer coisa sair, o CubeBin anota de onde saiu." />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Border x:Name="Etapa1" Classes="etapa ativa"><TextBlock Text="1 · Escolher" /></Border>
+        <Border x:Name="Etapa2" Classes="etapa"><TextBlock Text="2 · Para onde vão?" /></Border>
+        <Border x:Name="Etapa3" Classes="etapa"><TextBlock Text="3 · Execução" /></Border>
+        <Border x:Name="Etapa4" Classes="etapa"><TextBlock Text="4 · Concluído" /></Border>
+      </StackPanel>
+    </StackPanel>
+
+    <!-- Ações -->
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,*,Auto" Margin="0,18,0,0">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button x:Name="BtnConectar" Classes="link" Content="Conectar conta" IsVisible="False" Click="BtnConectar_Click" />
+        <Button x:Name="BtnRestaurar" Classes="secondary ic" Content="Restaurar" Tag="{StaticResource IconeDesfazer}"
+                IsVisible="False" Click="BtnRestaurar_Click" />
+      </StackPanel>
+      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+        <Button x:Name="BtnRelatorio" Classes="secondary ic" Content="Abrir relatório" Tag="{StaticResource IconeDocumento}"
+                IsVisible="False" Click="BtnRelatorio_Click" />
+        <Button x:Name="BtnVoltar" Classes="secondary ic" Content="Voltar" Tag="{StaticResource IconeSetaEsquerda}" Click="BtnVoltar_Click" />
+        <Button x:Name="BtnAvancar" Classes="primary ic" Content="Continuar" Tag="{StaticResource IconeSetaDireita}" Click="BtnAvancar_Click" />
+      </StackPanel>
+    </Grid>
+
+    <Panel>
+      <!-- ────────── 1. ESCOLHER ────────── -->
+      <Grid x:Name="PainelEscolher" ColumnDefinitions="*,18,*" RowDefinitions="*,Auto">
+        <!-- Esvaziar uma pasta -->
+        <Border Classes="card" Padding="0">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Top" Margin="20,18,20,10" Spacing="4">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Viewbox Width="18" Height="18"><Path Classes="icon accent" Data="{StaticResource IconePasta}" /></Viewbox>
+                <TextBlock Text="Esvaziar uma pasta" Classes="h3" />
+              </StackPanel>
+              <TextBlock Classes="secondary" FontSize="13" TextWrapping="Wrap"
+                         Text="Tudo o que está dentro sai. A pasta continua existindo; pastas padrão nunca são apagadas." />
+            </StackPanel>
+            <Button DockPanel.Dock="Bottom" x:Name="BtnEsvaziar" Classes="secondary ic" Content="Esvaziar esta pasta"
+                    Tag="{StaticResource IconeSetaDireita}" Margin="20,8,20,18" HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center" IsEnabled="False" Click="BtnEsvaziar_Click" />
+            <ScrollViewer>
+              <StackPanel x:Name="ListaPastas" Margin="20,0,20,0" Spacing="8" />
+            </ScrollViewer>
+          </DockPanel>
+        </Border>
+
+        <!-- Escolher arquivos -->
+        <Border Grid.Column="2" Classes="card" Padding="0">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Top" Margin="20,18,20,10" Spacing="4">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Viewbox Width="18" Height="18"><Path Classes="icon accent" Data="{StaticResource IconeArquivoMais}" /></Viewbox>
+                <TextBlock Text="Escolher arquivos" Classes="h3" />
+              </StackPanel>
+              <TextBlock Classes="secondary" FontSize="13" TextWrapping="Wrap"
+                         Text="Arraste arquivos ou pastas para cá, ou escolha no computador." />
+            </StackPanel>
+            <Button DockPanel.Dock="Bottom" x:Name="BtnContinuarArquivos" Classes="secondary ic" Content="Continuar com os escolhidos"
+                    Tag="{StaticResource IconeSetaDireita}" Margin="20,8,20,18" HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center" IsEnabled="False" Click="BtnContinuarArquivos_Click" />
+            <Border x:Name="ZonaSoltar" DockPanel.Dock="Top" Classes="soltar" Margin="20,0,20,10" DragDrop.AllowDrop="True">
+              <StackPanel Spacing="10" HorizontalAlignment="Center">
+                <Viewbox Width="30" Height="30" HorizontalAlignment="Center">
+                  <Path Classes="icon" Data="{StaticResource IlustracaoPastaEntrada}" />
+                </Viewbox>
+                <TextBlock Text="Solte aqui" HorizontalAlignment="Center" Classes="secondary" />
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                  <Button Classes="soft ic" Content="Arquivos…" Tag="{StaticResource IconeArquivoMais}" Click="BtnEscolherArquivos_Click" />
+                  <Button Classes="soft ic" Content="Pasta…" Tag="{StaticResource IconePastaMais}" Click="BtnEscolherPasta_Click" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <ScrollViewer>
+              <StackPanel x:Name="ListaEscolhidos" Margin="20,0,20,0" Spacing="0" />
+            </ScrollViewer>
+          </DockPanel>
+        </Border>
+
+        <!-- Sugestões do agente (versão 2.0) -->
+        <Border x:Name="CartaoSugestoes" Grid.Row="1" Grid.ColumnSpan="3" Margin="0,16,0,0" IsVisible="False" />
+      </Grid>
+
+      <!-- ────────── 2. PARA ONDE VÃO? ────────── -->
+      <DockPanel x:Name="PainelDestino" IsVisible="False">
+        <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,14">
+          <TextBlock x:Name="TxtSelecao" Classes="h3" />
+          <StackPanel x:Name="ListaAvisosSelecao" Spacing="6" />
+        </StackPanel>
+        <Grid ColumnDefinitions="*,16,*" RowDefinitions="*,16,*">
+          <!-- Extras à esquerda -->
+          <Border x:Name="BlocoLixeira" Classes="bloco clicavel" Padding="20" PointerReleased="BlocoLixeira_Click">
+            <DockPanel>
+              <Border DockPanel.Dock="Left" Classes="iconeBloco" Margin="0,0,14,0" VerticalAlignment="Top">
+                <Viewbox Width="20" Height="20"><Path Classes="icon" Data="{StaticResource IconeLixeira}" /></Viewbox>
+              </Border>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Lixeira" Classes="h3" />
+                <TextBlock Classes="secondary" TextWrapping="Wrap" FontSize="13"
+                           Text="Vai para a Lixeira do sistema. Dá para restaurar pelo CubeBin enquanto a Lixeira não for esvaziada." />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+          <Border x:Name="BlocoApagar" Grid.Row="2" Classes="bloco clicavel" Padding="20" PointerReleased="BlocoApagar_Click">
+            <DockPanel>
+              <Border DockPanel.Dock="Left" Classes="iconeBloco" Margin="0,0,14,0" VerticalAlignment="Top"
+                      Background="{DynamicResource DangerSoftBrush}">
+                <Viewbox Width="20" Height="20"><Path Classes="icon" Stroke="{DynamicResource DangerBrush}" Data="{StaticResource IconeArquivoX}" /></Viewbox>
+              </Border>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Apagar de vez" Classes="h3" />
+                <TextBlock Classes="secondary" TextWrapping="Wrap" FontSize="13"
+                           Text="Libera o espaço na hora, mas não dá para desfazer. O CubeBin pede confirmação antes." />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+
+          <!-- A recomendada, em destaque à direita -->
+          <Border x:Name="BlocoNuvem" Grid.Column="2" Grid.RowSpan="3" Classes="bloco clicavel" Padding="24"
+                  PointerReleased="BlocoNuvem_Click">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Classes="badge accent" HorizontalAlignment="Left" Margin="0,0,0,16">
+                <TextBlock Text="Recomendado" />
+              </Border>
+              <Border x:Name="AvisoSemConta" DockPanel.Dock="Bottom" Classes="notice warning" IsVisible="False">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <Viewbox Width="16" Height="16"><Path Classes="icon" Data="{StaticResource IconeAlerta}" /></Viewbox>
+                  <TextBlock Text="Nenhuma conta do Google Drive conectada." />
+                </StackPanel>
+              </Border>
+              <StackPanel Spacing="12">
+                <Border Classes="iconeBloco" Width="56" Height="56" HorizontalAlignment="Left">
+                  <Viewbox Width="28" Height="28"><Path Classes="icon" Data="{StaticResource IconeEnviarNuvem}" /></Viewbox>
+                </Border>
+                <TextBlock Text="Nuvem" Classes="h2" />
+                <TextBlock Classes="secondary" TextWrapping="Wrap"
+                           Text="Os arquivos são compactados num Cubo e enviados para a pasta CubeBin do seu Google Drive. Só saem do computador depois que o CubeBin confere que o pacote chegou inteiro." />
+                <TextBlock x:Name="TxtContaNuvem" Classes="pequeno" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+        </Grid>
+      </DockPanel>
+
+      <!-- ────────── 3. EXECUÇÃO ────────── -->
+      <Border x:Name="PainelExecucao" IsVisible="False" Classes="card" MaxWidth="560" VerticalAlignment="Center">
+        <StackPanel Spacing="14">
+          <TextBlock x:Name="TxtExecucaoTitulo" Text="Liberando espaço…" Classes="h2" />
+          <TextBlock x:Name="TxtExecucaoContagem" Classes="secondary" />
+          <ProgressBar x:Name="BarraExecucao" Classes="slim" Minimum="0" Maximum="1" />
+          <TextBlock x:Name="TxtExecucaoArquivo" Classes="muted" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+      </Border>
+
+      <!-- ────────── 4. CONCLUÍDO ────────── -->
+      <Grid x:Name="PainelConcluido" IsVisible="False" ColumnDefinitions="*,18,*">
+        <Border Classes="card">
+          <StackPanel Spacing="14">
+            <Border Classes="iconeBloco" Width="52" Height="52" HorizontalAlignment="Left">
+              <Viewbox Width="26" Height="26"><Path x:Name="IconeConcluido" Classes="icon" Data="{StaticResource IconeSucesso}" /></Viewbox>
+            </Border>
+            <TextBlock x:Name="TxtLiberado" Classes="numero" />
+            <TextBlock x:Name="TxtConcluidoTitulo" Classes="h3" TextWrapping="Wrap" />
+            <TextBlock x:Name="TxtConcluidoDetalhe" Classes="secondary" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="2" Classes="card" Padding="0">
+          <ScrollViewer>
+            <StackPanel x:Name="ListaConcluidoAvisos" Margin="20" Spacing="10" />
+          </ScrollViewer>
+        </Border>
+      </Grid>
+    </Panel>
+  </DockPanel>
+</UserControl>
