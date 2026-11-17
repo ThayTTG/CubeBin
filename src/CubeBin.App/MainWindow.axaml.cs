@@ -40,9 +40,23 @@ public partial class MainWindow : Window
         Navegar(pagina);
     }
 
+    private TelaConfiguracoes ObterConfiguracoes()
+    {
+        if (_paginas.TryGetValue("configuracoes", out var c)) return (TelaConfiguracoes)c;
+        var tela = new TelaConfiguracoes(_servicos, this);
+        _paginas["configuracoes"] = tela;
+        return tela;
+    }
+
     /// <summary>Mostra uma página. <paramref name="parametro"/> vai para ITela.AoEntrar.</summary>
     public void Navegar(string pagina, object? parametro = null)
     {
+        // "regras" é a seção Regras das Configurações.
+        if (pagina == "regras")
+        {
+            pagina = "configuracoes";
+            parametro = "regras";
+        }
         if (!_paginas.TryGetValue(pagina, out var controle))
         {
             controle = CriarPagina(pagina);
@@ -63,6 +77,8 @@ public partial class MainWindow : Window
         "inicio" => new TelaInicio(_servicos, this),
         "organizar" => new TelaOrganizar(_servicos, this),
         "liberar" => new TelaLiberar(_servicos, this),
+        "configuracoes" or "regras" => ObterConfiguracoes(),
+        "cubos" => new TelaCubos(_servicos, this),
         "sobre" => new TelaSobre(),
         _ => new TelaEmBreve(pagina),
     };

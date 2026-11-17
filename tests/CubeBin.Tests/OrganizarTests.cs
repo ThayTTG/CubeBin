@@ -115,6 +115,40 @@ public class ConfiguracaoTests
     }
 
     [Fact]
+    public void DeixarOndeEstaTiraDaRegraENaoVoltaParaSemPasta()
+    {
+        var config = RegrasPadrao.CriarConfiguracaoInicial();
+        ConfiguracaoService.IgnorarExtensao(config, "PNG");
+        Assert.Null(config.RegraDaExtensao(".png"));
+        Assert.Contains(".png", config.ExtensoesIgnoradas);
+        Assert.False(ConfiguracaoService.AnotarSemPasta(config, new[] { ".png" }));
+        Assert.True(ConfiguracaoService.AnotarSemPasta(config, new[] { ".7z" }));
+        Assert.Contains(".7z", config.ExtensoesSemPasta);
+
+        // Arrastar de volta para uma pasta tira da lista "deixar onde está".
+        ConfiguracaoService.AtribuirExtensao(config, ".png", "imagens");
+        Assert.DoesNotContain(".png", config.ExtensoesIgnoradas);
+    }
+
+    [Fact]
+    public void ExtensaoIgnoradaFicaOndeEstaNaPrevia()
+    {
+        using var c = new Cenario();
+        ConfiguracaoService.IgnorarExtensao(c.Config, ".png");
+        c.Pasta.Arquivo(c.Em(PastaPadrao.Downloads), "x.png");
+        var plano = c.Planejar();
+        Assert.Empty(plano.Movimentos);
+        Assert.Empty(plano.SemPasta);
+    }
+
+    [Fact]
+    public void PreviewDoCuboUsaSingularEPlural()
+    {
+        var cubo = new Cubo { PorCategoria = new() { ["Imagens"] = 4, ["Vídeos"] = 1 } };
+        Assert.Equal("4 imagens · 1 vídeo", cubo.ResumoPorTipo);
+    }
+
+    [Fact]
     public void PastaPadraoNuncaERemovidaSoPersonalizada()
     {
         using var teste = new PastaDeTeste();

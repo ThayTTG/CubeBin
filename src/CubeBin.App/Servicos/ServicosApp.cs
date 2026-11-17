@@ -94,6 +94,9 @@ public class ServicosApp
         Dialogo.Show(texto, "Restaurar", MessageBoxButton.OK, r.Falhas.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
     }
 
+    /// <summary>Um botão a mais nos detalhes de um Cubo (ex.: "Tentar enviar de novo", na 2.0).</summary>
+    public virtual Avalonia.Controls.Control? AcaoExtraDoCubo(Cubo cubo) => null;
+
     /// <summary>Anota as extensões novas sem pasta para a pessoa decidir na tela de regras.</summary>
     public void AnotarSemPasta(IEnumerable<string> extensoes)
     {

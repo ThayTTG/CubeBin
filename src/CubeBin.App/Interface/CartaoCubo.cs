@@ -58,7 +58,7 @@ public static class CartaoCubo
         {
             var linha = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
             linha.Children.Add(new Ellipse { Width = 8, Height = 8, Fill = Ui.CorDaCategoria(categoria), VerticalAlignment = VerticalAlignment.Center });
-            linha.Children.Add(new TextBlock { Text = $"{n} {categoria}" });
+            linha.Children.Add(new TextBlock { Text = Cubo.NomeDaCategoria(categoria, n) });
             pilha.Children.Add(linha);
         }
         if (cubo.PastasDeOrigem.Count > 0)

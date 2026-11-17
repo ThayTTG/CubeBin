@@ -65,9 +65,9 @@ public class Cubo
     public string Titulo => Tipo switch
     {
         TipoCubo.Organizado => Modo == "automatico" ? "Organização automática" : "Organização",
-        TipoCubo.Lixeira => "Enviado para a Lixeira",
+        TipoCubo.Lixeira => "Na Lixeira",
         TipoCubo.ApagadoDeVez => "Apagado de vez",
-        TipoCubo.Nuvem => EnvioAdiado ? "Envio para a nuvem adiado" : "Enviado para a nuvem",
+        TipoCubo.Nuvem => EnvioAdiado ? "Envio adiado" : "Na nuvem",
         _ => "Cubo",
     };
 
@@ -75,7 +75,21 @@ public class Cubo
     [JsonIgnore]
     public string ResumoPorTipo => PorCategoria.Count == 0
         ? "Nenhum arquivo"
-        : string.Join(" · ", PorCategoria.OrderByDescending(p => p.Value).Select(p => $"{p.Value} {p.Key}"));
+        : string.Join(" · ", PorCategoria.OrderByDescending(p => p.Value).Select(p => NomeDaCategoria(p.Key, p.Value)));
+
+    /// <summary>"1 imagem", "4 imagens", "1 vídeo"...</summary>
+    public static string NomeDaCategoria(string categoria, int n)
+    {
+        var (um, varios) = categoria switch
+        {
+            "Imagens" => ("imagem", "imagens"),
+            "Vídeos" => ("vídeo", "vídeos"),
+            "Músicas" => ("música", "músicas"),
+            "Documentos" => ("documento", "documentos"),
+            _ => ("outro", "outros"),
+        };
+        return n == 1 ? $"1 {um}" : $"{n} {varios}";
+    }
 }
 
 /// <summary>

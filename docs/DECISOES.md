@@ -213,3 +213,34 @@ disponível no sistema, o bloco da Lixeira aparece apagado.
 ### 3.6 Sem conta conectada
 Como no PRD: o bloco da nuvem aparece apagado, com o aviso "Nenhuma conta do Google Drive conectada"
 e o link "Conectar conta" no canto inferior esquerdo; o botão da direita vira "Enviar para a Lixeira".
+
+---
+
+## Versão 1.2 — Telas
+
+### 4.1 Navegação no padrão do launcher
+Menu lateral fixo (Início, Organizar Arquivos, Liberar Espaço, Cubos, Configurações, Sobre) com o
+cabeçalho do app e o `CreditsCard` do Kit NokyLabs, como no launcher. As telas internas usam colunas
+(duas, em geral) para ocupar um espaço mais quadrado.
+
+### 4.2 Onde fica a tela de regras
+O PRD descreve a tela de regras e a seção "Regras" das Configurações separadamente. Elas viraram a
+mesma coisa: a seção **Regras** das Configurações é o quadro de arrastar e soltar. Os atalhos
+"Escolher as pastas" (prévia, tela inicial) abrem direto essa seção.
+
+### 4.3 "Nova pasta" no quadro de regras
+Soltar um bloquinho em "Nova pasta" pede o nome e cria a pasta **dentro de Documentos** (não monitorada,
+só destino). Dá para mudar de lugar depois pelo JSON. Clicar num bloquinho abre o mesmo "Mover para…"
+num menu, para quem não consegue arrastar (acessibilidade).
+
+### 4.4 Arquivos sem pasta: dois destinos possíveis
+Além das pastas, existe o bloco **Deixar onde está** (`extensoesIgnoradas` no JSON): tipos que nunca são
+movidos e que não voltam a aparecer como "sem pasta".
+
+### 4.5 Seções Nuvem e Agente
+As seis seções existem desde a 1.2; Nuvem e Agente ganham conteúdo na 2.0.
+
+### 4.6 Tela de Cubos
+Filtros por tipo (organizados, Lixeira, nuvem, apagados) e período (sempre, 7 e 30 dias); resumo com
+quantidade de Cubos, arquivos organizados, espaço liberado e contagem por tipo. Os detalhes de um
+Cubo aparecem em cima da lista, com Restaurar, Abrir relatório e Ver registro (JSON).
