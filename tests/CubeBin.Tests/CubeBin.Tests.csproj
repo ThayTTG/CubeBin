@@ -1,22 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Testes do CubeBin que não dependem da tela: o agendamento do agente, a configuração e a
-       migração do CubeBin 2.x (quando a organização ainda morava aqui). -->
-  <!-- Mesmo alvo do CubeBin.App: Windows com toasts; Linux em net8.0 puro. -->
+  <!-- Testes do CubeBin. Tudo o que move ou apaga arquivos roda em pastas temporárias criadas
+       pelo próprio teste (PastaDeTeste), nunca nas pastas reais do usuário. -->
   <PropertyGroup>
-    <AlvoLinux Condition="'$(RuntimeIdentifier)' != '' and !$(RuntimeIdentifier.StartsWith('win'))">true</AlvoLinux>
-    <AlvoLinux Condition="'$(RuntimeIdentifier)' == '' and !$([MSBuild]::IsOSPlatform('Windows'))">true</AlvoLinux>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(AlvoLinux)' != 'true'">
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
-    <EnableWindowsTargeting>true</EnableWindowsTargeting>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(AlvoLinux)' == 'true'">
     <TargetFramework>net8.0</TargetFramework>
-  </PropertyGroup>
-  <PropertyGroup>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
+    <!-- Os testes mexem em PastasDoSistema.Substituto (estático): rodam um de cada vez. -->
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
@@ -24,6 +14,9 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\CubeBin.App\CubeBin.App.csproj" />
+    <ProjectReference Include="..\..\src\CubeBin.Core\CubeBin.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

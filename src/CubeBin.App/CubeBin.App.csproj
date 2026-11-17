@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    CubeBin 3: a faxina e a nuvem (sugestões, apagar com registro, Cubos no Google Drive), com a
-    interface em Avalonia + NokyLabs.UI (o Kit NokyLabs, com o vermelho do CubeBin). A organização
-    de arquivos, que vivia aqui até a 2.x, virou um app à parte (src/Organizador.App).
+    CubeBin: as telas (Início, Organizar, Liberar Espaço, Cubos, Configurações e Sobre), o ícone da
+    bandeja, as notificações e o agendador por ausência. Interface em Avalonia + NokyLabs.UI (o Kit
+    NokyLabs, com o vermelho do CubeBin). Toda a lógica mora no CubeBin.Core.
   -->
   <!--
     Windows: net8.0-windows10.0.19041.0 (toasts nativos, ícone e manifesto do .exe).
@@ -46,23 +46,22 @@
     <PackageReference Include="Avalonia.Desktop" Version="11.3.*" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.*" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.*" />
-    <!-- As tabelas (sugestões, lista do Deletar, pastas analisadas). -->
+    <!-- As tabelas (prévia, arquivos escolhidos, sugestões). -->
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.*" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(AlvoLinux)' != 'true'">
-    <!-- Toasts nativos do Windows 10/11 (avisos de análise, exclusão e backup). -->
+    <!-- Toasts nativos do Windows 10/11 (aviso de início com "Cancelar" e resumo final). -->
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(AlvoLinux)' == 'true'">
-    <!-- O toast é só do Windows; no Linux os avisos ficam no LinuxNotificationService. -->
-    <Compile Remove="Services\ToastNotificationService.cs" />
+    <!-- O toast é só do Windows; no Linux os avisos ficam no AvisosLinux. -->
+    <Compile Remove="Servicos\AvisosWindows.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CubeBin.Core\CubeBin.Core.csproj" />
-    <ProjectReference Include="..\Comum.UI\Comum.UI.csproj" />
     <!-- O Kit NokyLabs (submódulo Git em lib/NokyLabs.UI). -->
     <ProjectReference Include="..\..\lib\NokyLabs.UI\src\NokyLabs.UI\NokyLabs.UI.csproj" />
   </ItemGroup>
