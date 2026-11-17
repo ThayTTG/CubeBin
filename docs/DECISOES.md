@@ -297,3 +297,22 @@ programas, ocultos, abertos, recentes) e só olha as pastas do CubeBin. Desligad
 ligado, analisa com a pessoa ausente, no máximo uma vez por dia, com prioridade baixa de CPU, e avisa
 por notificação se achar algo. As sugestões aparecem dentro do Liberar Espaço; nada sai sem a pessoa
 escolher o destino na tela "Para onde vão?".
+
+---
+
+## O que ficou pendente (e por quê)
+
+1. **Testar o Google Drive de verdade.** Precisa do Client ID/Secret OAuth do projeto no Google Cloud,
+   que só a dona do projeto tem (README, "Configurar a integração com o Google Drive"). Todo o fluxo
+   foi testado com a "nuvem local" (testes automáticos e modo `CUBEBIN_NUVEM_DE_TESTE`), mas o login
+   real, o envio em partes e o MD5 devolvido pelo Drive só podem ser conferidos com as credenciais.
+2. **Testar no Windows real.** Daqui só deu para compilar com o alvo Windows (sem erros nem avisos).
+   Não foram executados: toasts com "Cancelar", Known Folders, abertura exclusiva para "arquivo em uso",
+   envio para a Lixeira (`SHFileOperation`) e a restauração pelos arquivos `$I`/`$R` da `$Recycle.Bin`
+   (a leitura desses arquivos tem teste com arquivos montados). Vale um teste manual seguindo o README.
+3. **Arrastar e soltar dos bloquinhos** foi verificado só no código e pelo menu de clique (o Xvfb não
+   simula arrasto). Conferir com o mouse no Windows e no Linux.
+4. **Migração da configuração antiga** (2.x/3.x): não foi feita; a configuração nova começa do padrão.
+   Os registros CSV antigos continuam onde estavam, sem restauração pelo CubeBin novo.
+5. **Reenvio automático de envios adiados:** decidido não fazer (5.5); a pessoa usa "Tentar enviar de novo".
+6. **Numeração da versão:** 3.0.0 no executável e "1.0…2.0" nas notas (1.5). Confirmar antes de lançar.

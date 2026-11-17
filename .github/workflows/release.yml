@@ -1,7 +1,6 @@
 name: Build e Release
 
-# Lança uma versão nova do CubeBin (só ele: o organizador, que mora em src/Organizador.*, ainda
-# não tem lançamento próprio — ele ganha repositório e lançamento quando tiver nome).
+# Lança uma versão nova do CubeBin (pacotes Windows e Linux).
 #
 # Como disparar:
 #   • enviar qualquer commit para o branch "release"  → a tag vem do <Version> do CubeBin.App.csproj
